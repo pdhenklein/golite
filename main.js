@@ -478,9 +478,17 @@ function isNewer(latest, current) {
   return false;
 }
 
+function getAppVersion() {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    if (pkg && pkg.version) return pkg.version;
+  } catch (e) {}
+  return app.getVersion();
+}
+
 let pendingUpdate = null;
 
-ipcMain.handle('get-version', () => app.getVersion());
+ipcMain.handle('get-version', () => getAppVersion());
 
 ipcMain.handle('update-check', async () => {
   const cfg = readUpdateConfig();
@@ -494,8 +502,9 @@ ipcMain.handle('update-check', async () => {
     for await (const chunk of res) body += chunk;
     const rel = JSON.parse(body);
     const asset = (rel.assets || []).find(a => a.name === 'app.zip');
-    const current = app.getVersion();
+    const current = getAppVersion();
     const hasUpdate = !!asset && isNewer(rel.tag_name, current);
+    log(`[UPDATER] check: local=${current}, remote=${rel.tag_name}, hasUpdate=${hasUpdate}`);
     pendingUpdate = hasUpdate ? { version: rel.tag_name, url: asset.browser_download_url } : null;
     return { ok: true, current, latest: rel.tag_name, hasUpdate };
   } catch (err) {
@@ -510,6 +519,7 @@ ipcMain.handle('update-apply', async () => {
     const workDir = path.join(os.tmpdir(), 'golite-update');
     fs.mkdirSync(workDir, { recursive: true });
     const zipPath = path.join(workDir, 'app.zip');
+    log('[UPDATER] Baixando update de: ' + pendingUpdate.url);
     const res = await httpsGet(pendingUpdate.url);
     if (res.statusCode !== 200) { res.resume(); return { ok: false, error: 'Falha no download (' + res.statusCode + ')' }; }
     const total = parseInt(res.headers['content-length'] || '0', 10);
@@ -529,24 +539,37 @@ ipcMain.handle('update-apply', async () => {
     });
 
     const ps1 = path.join(workDir, 'apply-update.ps1');
+    const safeTarget = JSON.stringify(__dirname);
+    const safeExe = JSON.stringify(process.execPath);
+    const safeZip = JSON.stringify(zipPath);
+    const procId = process.pid;
+
     fs.writeFileSync(ps1, [
-      'param([int]$ProcId, [string]$Zip, [string]$Target, [string]$Exe)',
-      'try { Wait-Process -Id $ProcId -Timeout 30 -ErrorAction SilentlyContinue } catch {}',
-      'Start-Sleep -Milliseconds 800',
-      '$tmp = Join-Path $env:TEMP "golite-update\\extract"',
-      'if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }',
-      'Expand-Archive -Path $Zip -DestinationPath $tmp -Force',
-      'robocopy $tmp $Target /E /NFL /NDL /NJH /NJS /R:5 /W:1 | Out-Null',
-      'Start-Process -FilePath $Exe'
+      `$log = Join-Path $env:TEMP "golite-update\\update.log"`,
+      `"[$(Get-Date)] Iniciando atualizacao..." | Out-File $log -Encoding utf8`,
+      `$target = ${safeTarget}`,
+      `$exe = ${safeExe}`,
+      `$zip = ${safeZip}`,
+      `$procId = ${procId}`,
+      `try { Wait-Process -Id $procId -Timeout 10 -ErrorAction SilentlyContinue } catch {}`,
+      `Get-Process -Name GoLite -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue`,
+      `Start-Sleep -Milliseconds 1200`,
+      `$tmp = Join-Path $env:TEMP "golite-update\\extract"`,
+      `if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }`,
+      `Expand-Archive -LiteralPath $zip -DestinationPath $tmp -Force`,
+      `robocopy $tmp $target /E /NFL /NDL /NJH /NJS /R:8 /W:1 | Out-Null`,
+      `"[$(Get-Date)] Arquivos copiados com sucesso para $target" | Out-File $log -Append -Encoding utf8`,
+      `Start-Sleep -Milliseconds 600`,
+      `Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{CommandLine = ('"' + $exe + '"')}`,
+      `"[$(Get-Date)] GoLite reiniciado com sucesso!" | Out-File $log -Append -Encoding utf8`
     ].join('\r\n'), 'utf8');
 
     spawn('powershell.exe', [
-      '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', ps1,
-      '-ProcId', String(process.pid), '-Zip', zipPath, '-Target', __dirname, '-Exe', process.execPath
+      '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', ps1
     ], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
 
-    log('update-apply: handing off to updater for ' + pendingUpdate.version);
-    setTimeout(() => { app.isQuitting = true; app.exit(0); }, 400);
+    log('[UPDATER] Handing off to updater script for ' + pendingUpdate.version);
+    setTimeout(() => { app.isQuitting = true; app.exit(0); }, 500);
     return { ok: true };
   } catch (err) {
     log('update-apply error: ' + (err && err.stack));
