@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GoLite</title>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <style>
+    :root {
+      --bg: #14151a;
+      --card-bg: #171820;
+      --card-border: rgba(255, 255, 255, 0.04);
+      --card-border-hover: rgba(255, 255, 255, 0.12);
+      --text: #ffffff;
+      --text-muted: #6b6e7f;
+      --text-dim: #454756;
+
+      --accent: #ffffff;
+      --accent-contrast: #14151a;
+
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.08);
+      --danger-border: rgba(239, 68, 68, 0.25);
+
+      --success: #22c55e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      user-select: none;
+      border-radius: 0 !important;
+    }
+
+    body {
+      background-color: transparent;
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-wrapper {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      justify-content: flex-end;
+    }
+
+    /* ========================================================
+       MAIN RIGHT SIDEBAR (430px) - MONOLITHIC UNIX EMBEDDED
+       ======================================================== */
+    .sidebar-panel {
+      width: 430px;
+      min-width: 430px;
+      max-width: 430px;
+      height: 100vh;
+      flex-shrink: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid rgba(255, 255, 255, 0.04);
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .titlebar {
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--card-border);
+      background: #111216;
+      -webkit-app-region: drag;
+      flex-shrink: 0;
+    }
+
+    .titlebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+
+    .brand-icon {
+      width: 15px;
+      height: 15px;
+      object-fit: contain;
+      opacity: 0.7;
+      transition: opacity 0.15s;
+    }
+    .titlebar:hover .brand-icon {
+      opacity: 1;
+    }
+
+    .titlebar-brand span.version {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      font-weight: 400;
+      letter-spacing: 0.8px;
+    }
+
+    .titlebar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      -webkit-app-region: no-drag;
+      color: var(--text-dim);
+      font-size: 0.82rem;
+    }
+
+    .titlebar-actions span {
+      cursor: pointer;
+      padding: 2px 6px;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+    .titlebar-actions span:hover {
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .status-banner {
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--card-border);
+      background: #121318;
+      font-size: 0.7rem;
+      flex-shrink: 0;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 0.66rem;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--text-dim);
+      transition: all 0.2s;
+    }
+
+    .status-dot.active {
+      background: #ffffff;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+    }
+
+    .status-dot.connected {
+      background: var(--success);
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .sidebar-content::-webkit-scrollbar {
+      width: 5px;
+    }
+    .sidebar-content::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+    .sidebar-content::-webkit-scrollbar-thumb {
+      background: #232530;
+    }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .section-header {
+      font-size: 0.64rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+    }
+
+    /* Embedded monolithic card */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .card:hover {
+      border-color: var(--card-border-hover);
+      background: #191a24;
+    }
+
+    .id-display {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #111216;
+      border: 1px solid var(--card-border);
+      padding: 7px 10px;
+      font-size: 0.8rem;
+    }
+
+    .id-value {
+      font-family: monospace;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 2px;
+    }
+
+    .btn-copy {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      font-size: 0.66rem;
+      padding: 3px 8px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      transition: all 0.15s;
+    }
+    .btn-copy:hover {
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    /* Primary Stark White */
+    .btn-coral {
+      background: #ffffff;
+      color: #14151a;
+      font-weight: 700;
+      border-color: #ffffff;
+    }
+    .btn-coral:hover {
+      background: #d8dae4;
+      border-color: #d8dae4;
+    }
+
+    /* Outline Embedded */
+    .btn-outline {
+      background: #15161d;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: #8e91a0;
+    }
+    .btn-outline:hover {
+      border-color: rgba(255, 255, 255, 0.25);
+      background: #1c1d26;
+      color: #ffffff;
+    }
+
+    /* Danger Kill Switch */
+    .btn-danger-outline {
+      background: transparent;
+      border: 1px solid var(--danger-border);
+      color: var(--danger);
+      font-size: 0.76rem;
+      padding: 10px 14px;
+      width: 100%;
+      letter-spacing: 1.2px;
+      font-weight: 700;
+      text-transform: uppercase;
+      transition: all 0.15s;
+    }
+    .btn-danger-outline:hover {
+      background: var(--danger-bg);
+      border-color: var(--danger);
+      color: #fca5a5;
+    }
+
+    input[type="text"] {
+      background: #111216;
+      border: 1px solid var(--card-border);
+      padding: 8px 10px;
+      color: #fff;
+      font-size: 0.78rem;
+      outline: none;
+      width: 100%;
+      letter-spacing: 0.5px;
+      transition: border-color 0.15s;
+    }
+    input[type="text"]:focus {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .pill-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    /* Minimalist embedded pills */
+    .pill {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--text-dim);
+      padding: 6px 0;
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+    .pill:hover {
+      background: rgba(255, 255, 255, 0.03);
+      color: #a0a3b2;
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+    .pill.active {
+      background: #ffffff;
+      border-color: #ffffff;
+      color: #14151a;
+      font-weight: 700;
+    }
+
+    .guest-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .guest-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #111216;
+      border: 1px solid var(--card-border);
+      padding: 6px 10px;
+      font-size: 0.74rem;
+    }
+
+    .btn-kick {
+      background: transparent;
+      border: 1px solid var(--danger-border);
+      color: var(--danger);
+      font-size: 0.64rem;
+      padding: 2px 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .btn-kick:hover {
+      background: var(--danger);
+      color: #ffffff;
+    }
+
+    .video-viewport {
+      height: 220px;
+      background: #000;
+      border: 1px solid var(--card-border);
+      position: relative;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .video-controls {
+      position: absolute;
+      bottom: 8px;
+      display: flex;
+      gap: 6px;
+      background: rgba(17, 18, 22, 0.94);
+      border: 1px solid var(--card-border);
+      padding: 4px 8px;
+    }
+
+    /* ========================================================
+       FULLSCREEN MONITOR MODE
+       ======================================================== */
+    body.fullscreen-mode {
+      background: #000 !important;
+      overflow: hidden !important;
+    }
+
+    body.fullscreen-mode .app-wrapper {
+      width: 100vw !important;
+      height: 100vh !important;
+      overflow: hidden !important;
+    }
+
+    body.fullscreen-mode .sidebar-panel {
+      width: 100vw !important;
+      min-width: 100vw !important;
+      max-width: 100vw !important;
+      height: 100vh !important;
+      border: none !important;
+      background: #000 !important;
+    }
+
+    body.fullscreen-mode .titlebar,
+    body.fullscreen-mode .status-banner,
+    body.fullscreen-mode .sidebar-content > .section:not(#sectionPlayer) {
+      display: none !important;
+    }
+
+    body.fullscreen-mode .sidebar-content {
+      padding: 0 !important;
+      margin: 0 !important;
+      overflow: hidden !important;
+      height: 100vh !important;
+      width: 100vw !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+
+    body.fullscreen-mode #sectionPlayer {
+      width: 100vw !important;
+      height: 100vh !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+
+    body.fullscreen-mode #sectionPlayer .section-header {
+      display: none !important;
+    }
+
+    body.fullscreen-mode .video-viewport {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      border: none !important;
+      background: #000 !important;
+      z-index: 999999 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+
+    body.fullscreen-mode video {
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      object-fit: contain !important;
+      background: #000 !important;
+    }
+
+    body.fullscreen-mode .video-controls {
+      position: fixed !important;
+      bottom: 24px !important;
+      right: 24px !important;
+      z-index: 1000000 !important;
+      background: rgba(17, 18, 22, 0.95);
+      border: 1px solid var(--card-border);
+      padding: 8px 14px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    body.fullscreen-mode.mouse-active .video-controls {
+      opacity: 1;
+    }
+
+    body.fullscreen-mode:not(.mouse-active) {
+      cursor: none;
+    }
+
+    body.fullscreen-mode:not(.mouse-active) .video-controls {
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-wrapper">
+
+    <!-- RIGHT MAIN SIDEBAR (430px) -->
+    <div class="sidebar-panel">
+      <!-- Titlebar -->
+      <div class="titlebar">
+        <div class="titlebar-brand">
+          <img src="icon.png" class="brand-icon" alt="GoLite">
+          <span>G O L I T E</span>
+          <span class="version">v1.0</span>
+        </div>
+        <div class="titlebar-actions">
+          <span id="btnUpdate" title="Verificar atualizações" style="font-size:0.66rem; font-weight:700; letter-spacing:1px; text-transform:uppercase;">⟳ Atualizar</span>
+          <span id="btnMinimize" title="Minimizar para a Bandeja">🗕</span>
+          <span id="btnClose" title="Ocultar na Bandeja">✕</span>
+        </div>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="status-banner">
+        <div class="status-indicator">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusText">OCIOSO (SEM SALA)</span>
+        </div>
+        <span id="qualityStatusTag" style="color: #ffffff; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.8px;">1080P • 60 FPS • 32 MBPS</span>
+      </div>
+
+      <!-- Main Sidebar Content -->
+      <div class="sidebar-content">
+
+        <!-- 01. SALA & CONEXÃO -->
+        <div class="section">
+          <div class="section-header">01. Sala & Amigos (P2P)</div>
+          <div class="card">
+            <div style="font-size: 0.66rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;">Seu Código GoLite:</div>
+            <div class="id-display">
+              <span class="id-value" id="myIdDisplay">GERANDO...</span>
+              <button class="btn-copy" id="btnCopyId">Copiar</button>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-coral" id="btnCreateRoom" style="flex: 1;">+ Criar Sala</button>
+              <button class="btn btn-outline" id="btnCloseRoom" style="display: none;">Encerrar Sala</button>
+            </div>
+
+            <!-- Guest Input -->
+            <div id="guestConnectBox" style="display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid var(--card-border);">
+              <div style="font-size: 0.66rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;">Entrar na sala de um amigo:</div>
+              <div style="display: flex; gap: 6px;">
+                <input type="text" id="targetPeerInput" placeholder="Código (ex: GL-7K3M9Q)">
+                <button class="btn btn-outline" id="btnRequestJoin">Pedir Entrada</button>
+              </div>
+            </div>
+
+            <!-- Connected Friends List -->
+            <div id="guestsContainer" style="display: none; flex-direction: column; gap: 6px;">
+              <div style="font-size: 0.66rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Amigos na Sala:</div>
+              <div class="guest-list" id="guestList"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 02. FONTE DE CAPTURA -->
+        <div class="section">
+          <div class="section-header">02. Fonte</div>
+          <div class="card">
+            <button class="btn btn-outline" id="btnOpenPicker" style="width: 100%;">
+              Compartilhar a tela
+            </button>
+            <button class="btn btn-danger-outline" id="btnStopShare" style="display: none;">
+              Encerrar Transmissão
+            </button>
+            <div style="font-size: 0.72rem; font-weight: 500; color: var(--text-muted);" id="selectedSourceLabel">
+              Nenhuma fonte selecionada
+            </div>
+          </div>
+        </div>
+
+        <!-- 03. CONFIGURAÇÕES -->
+        <div class="section">
+          <div class="section-header">03. Qualidade & FPS</div>
+          <div class="card">
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label style="font-size: 0.66rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">RESOLUÇÃO</label>
+              </div>
+              <div class="pill-grid">
+                <div class="pill" data-res="720">720p</div>
+                <div class="pill active" data-res="1080">1080p</div>
+                <div class="pill" data-res="1440">2K</div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label style="font-size: 0.66rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">TAXA DE QUADROS</label>
+              </div>
+              <div class="pill-grid">
+                <div class="pill" data-fps="30">30 fps</div>
+                <div class="pill active" data-fps="60">60 fps</div>
+                <div class="pill" data-fps="120">120 fps</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 04. PLAYER (QUANDO CONVIDADO OU TRANSMITINDO) -->
+        <div class="section" id="sectionPlayer">
+          <div class="section-header">04. Visualização</div>
+          <div class="video-viewport" id="videoViewport">
+            <video id="streamVideo" autoplay playsinline></video>
+
+            <!-- Popout Window Placeholder -->
+            <div id="popoutPlaceholder" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; color: #ffffff; text-align: center; padding: 20px;">
+              <div style="font-size: 1.4rem;">🗖</div>
+              <div style="font-size: 0.72rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">Transmitindo em janela desacoplada</div>
+              <button class="btn btn-outline" id="btnReattach" style="font-size: 0.7rem; padding: 4px 10px;">🗗 Reacoplar</button>
+            </div>
+
+            <div class="video-controls" id="videoControls">
+              <button class="btn btn-outline" id="btnPopout" style="padding: 4px 8px; font-size: 0.66rem;" title="Desacoplar janela para outro monitor">🗖 Desacoplar</button>
+              <button class="btn btn-outline" id="btnPip" style="padding: 4px 8px; font-size: 0.66rem;">🗗 PiP</button>
+              <button class="btn btn-outline" id="btnFullscreen" style="padding: 4px 8px; font-size: 0.66rem;">⛶ Tela Cheia</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 05. KILL SWITCH -->
+        <div class="section" style="margin-top: auto; padding-top: 10px;">
+          <button class="btn btn-danger-outline" id="btnKillProcess">
+            Encerrar
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    // ========================================================
+    // SYNTHESIZED AUDIO CHIMES (WEB AUDIO API)
+    // ========================================================
+    const AudioFX = {
+      ctx: null,
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+      },
+      play(notes, step, peak, tail) {
+        try {
+          this.init();
+          const now = this.ctx.currentTime;
+          notes.forEach((freq, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + i * step);
+            gain.gain.setValueAtTime(0, now + i * step);
+            gain.gain.linearRampToValueAtTime(peak, now + i * step + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + i * step + tail);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + i * step);
+            osc.stop(now + i * step + tail + 0.02);
+          });
+        } catch (e) {}
+      },
+      playStart() { this.play([587.33, 739.99, 880.00], 0.09, 0.18, 0.35); },
+      playStop() { this.play([880.00, 587.33], 0.11, 0.16, 0.38); }
+    };
+
+    // ========================================================
+    // PERSISTENT IDENTITY + ROOM
+    // ========================================================
+    function genId() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let s = '';
+      for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+      return 'GL-' + s;
+    }
+    let myId = localStorage.getItem('golite_id');
+    if (!myId) {
+      myId = genId();
+      localStorage.setItem('golite_id', myId);
+    }
+    document.getElementById('myIdDisplay').textContent = myId;
+
+    let peer = null;
+    let activeRoom = false;
+    let localStream = null;
+    let currentSource = null;
+    let activeCalls = new Map();
+    let dataConnections = new Map();
+    let acceptedGuests = new Set();
+    let pendingRequests = new Map();
+    let viewerConn = null;
+    let viewerCall = null;
+    let viewerState = 'none'; // none | asking | waiting | watching
+
+    let selectedRes = '1080';
+    let selectedFps = '60';
+
+    function getBitrateKbps() {
+      return selectedRes === '1440' ? 50000 : 32000;
+    }
+
+    function updateQualityTag() {
+      const mbps = selectedRes === '1440' ? '50 MBPS' : '32 MBPS';
+      const resName = selectedRes === '1440' ? '2K' : selectedRes + 'P';
+      document.getElementById('qualityStatusTag').textContent = `${resName} • ${selectedFps} FPS • ${mbps}`;
+    }
+
+    function showToastBadge(msg) {
+      let badge = document.getElementById('toastBadge');
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'toastBadge';
+        badge.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#111216;border:1px solid #fff;color:#fff;padding:6px 14px;font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;box-shadow:0 8px 24px rgba(0,0,0,.85);z-index:99999;transition:all .25s ease;pointer-events:none;';
+        document.body.appendChild(badge);
+      }
+      badge.textContent = msg;
+      badge.style.opacity = '1';
+      clearTimeout(badge._timeout);
+      badge._timeout = setTimeout(() => { badge.style.opacity = '0'; }, 2500);
+    }
+
+    // Elements
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const btnCreateRoom = document.getElementById('btnCreateRoom');
+    const btnCloseRoom = document.getElementById('btnCloseRoom');
+    const btnRequestJoin = document.getElementById('btnRequestJoin');
+    const targetPeerInput = document.getElementById('targetPeerInput');
+    const guestsContainer = document.getElementById('guestsContainer');
+    const guestList = document.getElementById('guestList');
+    const btnOpenPicker = document.getElementById('btnOpenPicker');
+    const btnStopShare = document.getElementById('btnStopShare');
+    const selectedSourceLabel = document.getElementById('selectedSourceLabel');
+    const videoViewport = document.getElementById('videoViewport');
+    const streamVideo = document.getElementById('streamVideo');
+    const popoutPlaceholder = document.getElementById('popoutPlaceholder');
+    const btnReattach = document.getElementById('btnReattach');
+    const btnPopout = document.getElementById('btnPopout');
+    const btnPip = document.getElementById('btnPip');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    const btnKillProcess = document.getElementById('btnKillProcess');
+    const btnMinimize = document.getElementById('btnMinimize');
+    const btnClose = document.getElementById('btnClose');
+    const btnCopyId = document.getElementById('btnCopyId');
+
+    function refreshStatus() {
+      const n = acceptedGuests.size;
+      let dot = '', text = 'OCIOSO (SEM SALA)';
+      if (viewerState === 'watching') { dot = 'connected'; text = 'ASSISTINDO TRANSMISSÃO'; }
+      else if (localStream) { dot = 'connected'; text = `TRANSMITINDO (${n} ${n === 1 ? 'AMIGO' : 'AMIGOS'})`; }
+      else if (viewerState === 'waiting') { dot = 'connected'; text = 'CONECTADO (AGUARDANDO STREAM)'; }
+      else if (viewerState === 'asking') { dot = 'active'; text = 'PEDINDO AUTORIZAÇÃO...'; }
+      else if (activeRoom) { dot = 'active'; text = n > 0 ? `SALA ATIVA (${n} ${n === 1 ? 'AMIGO' : 'AMIGOS'})` : 'SALA ABERTA (AGUARDANDO)'; }
+      statusDot.className = 'status-dot' + (dot ? ' ' + dot : '');
+      statusText.textContent = text;
+    }
+
+    function updateShareUI() {
+      btnOpenPicker.style.display = localStream ? 'none' : 'inline-flex';
+      btnStopShare.style.display = localStream ? 'block' : 'none';
+      if (!localStream) selectedSourceLabel.textContent = 'Nenhuma fonte selecionada';
+    }
+
+    btnCopyId.addEventListener('click', () => {
+      navigator.clipboard.writeText(myId).then(() => {
+        btnCopyId.textContent = 'COPIADO!';
+        setTimeout(() => btnCopyId.textContent = 'Copiar', 2000);
+      });
+    });
+
+    btnMinimize.addEventListener('click', () => ipcRenderer.send('win-minimize'));
+    btnClose.addEventListener('click', () => ipcRenderer.send('win-close'));
+
+    btnKillProcess.addEventListener('click', () => {
+      AudioFX.playStop();
+      if (localStream) localStream.getTracks().forEach(t => t.stop());
+      ipcRenderer.send('kill-process');
+    });
+
+    // ========================================================
+    // LOW-LATENCY / HIGH-QUALITY TUNING
+    // ========================================================
+    // Reorders codecs (H264 first = GPU hardware encode, light on CPU) and raises bitrate floors.
+    function mungeSdp(sdp, maxKbps, minKbps) {
+      try {
+        const lines = sdp.split('\r\n');
+        const mIdx = lines.findIndex(l => l.startsWith('m=video'));
+        if (mIdx < 0) return sdp;
+        let end = lines.findIndex((l, i) => i > mIdx && l.startsWith('m='));
+        if (end < 0) end = lines.length;
+
+        const rtpmap = {};
+        const hasFmtp = {};
+        for (let i = mIdx; i < end; i++) {
+          const m = lines[i].match(/^a=rtpmap:(\d+) ([\w-]+)\//);
+          if (m) rtpmap[m[1]] = m[2].toUpperCase();
+          const f = lines[i].match(/^a=fmtp:(\d+) /);
+          if (f) hasFmtp[f[1]] = true;
+        }
+
+        const parts = lines[mIdx].split(' ');
+        const head = parts.slice(0, 3);
+        const pts = parts.slice(3);
+        const h264 = pts.filter(p => rtpmap[p] === 'H264');
+        const rest = pts.filter(p => rtpmap[p] !== 'H264');
+        lines[mIdx] = head.concat(h264, rest).join(' ');
+
+        const media = ['H264', 'VP8', 'VP9', 'AV1'];
+        const gx = `x-google-max-bitrate=${maxKbps};x-google-min-bitrate=${minKbps};x-google-start-bitrate=${Math.round(maxKbps * 0.5)}`;
+        const out = [];
+        for (let i = 0; i < lines.length; i++) {
+          let l = lines[i];
+          const inside = i > mIdx && i < end;
+          if (inside) {
+            const f = l.match(/^a=fmtp:(\d+) /);
+            if (f && media.includes(rtpmap[f[1]])) l = l + ';' + gx;
+          }
+          out.push(l);
+          if (inside) {
+            const r = l.match(/^a=rtpmap:(\d+) /);
+            if (r && media.includes(rtpmap[r[1]]) && !hasFmtp[r[1]]) out.push(`a=fmtp:${r[1]} ${gx}`);
+            if (l.startsWith('c=')) out.push('b=AS:' + maxKbps);
+          }
+        }
+        return out.join('\r\n');
+      } catch (e) {
+        return sdp;
+      }
+    }
+
+    function preferH264(pc) {
+      try {
+        const caps = RTCRtpSender.getCapabilities('video');
+        if (!caps) return;
+        const codecs = caps.codecs.slice().sort((a, b) => (b.mimeType === 'video/H264') - (a.mimeType === 'video/H264'));
+        pc.getTransceivers().forEach(t => {
+          if (t.sender && t.sender.track && t.sender.track.kind === 'video') t.setCodecPreferences(codecs);
+        });
+      } catch (e) {}
+    }
+
+    async function tuneSenderPc(pc, maxBps) {
+      if (!pc) return;
+      const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+      if (!sender) return;
+      try {
+        const p = sender.getParameters();
+        if (!p.encodings || !p.encodings.length) p.encodings = [{}];
+        const e = p.encodings[0];
+        e.maxBitrate = maxBps || getBitrateKbps() * 1000;
+        e.maxFramerate = parseInt(selectedFps, 10);
+        e.priority = 'high';
+        e.networkPriority = 'high';
+        p.degradationPreference = 'maintain-framerate';
+        try {
+          await sender.setParameters(p);
+        } catch (err) {
+          delete p.degradationPreference;
+          await sender.setParameters(p);
+        }
+      } catch (err) {}
+    }
+
+    function tuneCall(call) {
+      if (!call) return;
+      [300, 1500, 4000].forEach(ms => setTimeout(() => tuneSenderPc(call.peerConnection), ms));
+    }
+
+    function tuneReceivers(call) {
+      try {
+        call.peerConnection.getReceivers().forEach(r => {
+          const isVideo = r.track && r.track.kind === 'video';
+          try { r.jitterBufferTarget = isVideo ? 0 : 50; } catch (e) {}
+          try { r.playoutDelayHint = 0; } catch (e) {}
+        });
+      } catch (e) {}
+    }
+
+    function applyBitrateToAll() {
+      activeCalls.forEach(call => tuneSenderPc(call.peerConnection));
+    }
+
+    function callOptions() {
+      return {
+        sdpTransform: (sdp) => mungeSdp(sdp, getBitrateKbps(), 3000)
+      };
+    }
+
+    // Quality Pills with Live Quality Switching
+    document.querySelectorAll('[data-res]').forEach(p => {
+      p.addEventListener('click', async () => {
+        document.querySelectorAll('[data-res]').forEach(x => x.classList.remove('active'));
+        p.classList.add('active');
+        selectedRes = p.getAttribute('data-res');
+        updateQualityTag();
+        applyBitrateToAll();
+        if (localStream) await applyQualityChangeLive();
+      });
+    });
+
+    document.querySelectorAll('[data-fps]').forEach(p => {
+      p.addEventListener('click', async () => {
+        document.querySelectorAll('[data-fps]').forEach(x => x.classList.remove('active'));
+        p.classList.add('active');
+        selectedFps = p.getAttribute('data-fps');
+        updateQualityTag();
+        if (localStream) await applyQualityChangeLive();
+      });
+    });
+
+    updateQualityTag();
+
+    function captureDims() {
+      let width = 1920, height = 1080;
+      if (selectedRes === '720') { width = 1280; height = 720; }
+      if (selectedRes === '1440') { width = 2560; height = 1440; }
+      return { width, height, fps: parseInt(selectedFps, 10) };
+    }
+
+    function videoConstraints() {
+      const { width, height, fps } = captureDims();
+      return {
+        mandatory: {
+          chromeMediaSource: 'desktop',
+          chromeMediaSourceId: currentSource.id,
+          maxWidth: width,
+          maxHeight: height,
+          maxFrameRate: fps
+        },
+        optional: [{ cursor: 'motion' }]
+      };
+    }
+
+    async function applyQualityChangeLive() {
+      if (!localStream || !currentSource) return;
+      try {
+        const tempStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: videoConstraints() });
+        const newVideoTrack = tempStream.getVideoTracks()[0];
+        if (newVideoTrack) {
+          newVideoTrack.contentHint = 'motion';
+          newVideoTrack.onended = () => { if (localStream) stopSharing(); };
+          const oldVideoTrack = localStream.getVideoTracks()[0];
+          if (oldVideoTrack) {
+            oldVideoTrack.onended = null;
+            localStream.removeTrack(oldVideoTrack);
+            oldVideoTrack.stop();
+          }
+          localStream.addTrack(newVideoTrack);
+          streamVideo.srcObject = localStream;
+
+          activeCalls.forEach(call => {
+            if (call.peerConnection) {
+              const sender = call.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+              if (sender) sender.replaceTrack(newVideoTrack).catch(() => {});
+            }
+          });
+          if (popoutPc) {
+            const ps = popoutPc.getSenders().find(s => s.track && s.track.kind === 'video');
+            if (ps) ps.replaceTrack(newVideoTrack).catch(() => {});
+          }
+        }
+      } catch (err) {
+        console.warn('Live track acquisition fallback:', err);
+      }
+      applyBitrateToAll();
+      activeCalls.forEach(call => tuneCall(call));
+      showToastBadge(`QUALIDADE: ${selectedRes === '1440' ? '2K' : selectedRes + 'P'} @ ${selectedFps} FPS`);
+    }
+
+    // ========================================================
+    // PEERJS
+    // ========================================================
+    function initPeer(attempt = 0) {
+      peer = new Peer(myId, {
+        debug: 1,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' }
+          ],
+          iceCandidatePoolSize: 4
+        }
+      });
+
+      peer.on('error', (err) => {
+        console.warn('PeerJS error:', err.type);
+        // The broker may still hold our fixed ID for a few seconds after a crash/restart
+        if (err.type === 'unavailable-id' && attempt < 30) {
+          statusText.textContent = 'RECONECTANDO SALA...';
+          try { peer.destroy(); } catch (e) {}
+          setTimeout(() => initPeer(attempt + 1), 3000);
+        }
+      });
+
+      peer.on('disconnected', () => {
+        try { peer.reconnect(); } catch (e) {}
+      });
+
+      peer.on('connection', (conn) => {
+        dataConnections.set(conn.peer, conn);
+
+        conn.on('data', (data) => {
+          if (!data || data.type !== 'request-entry') return;
+          if (!activeRoom) {
+            conn.send({ type: 'rejected', reason: 'Nenhuma sala ativa no momento' });
+            return;
+          }
+          if (acceptedGuests.has(conn.peer)) {
+            conn.send({ type: 'accepted', live: !!localStream });
+            if (localStream && !activeCalls.has(conn.peer)) callGuest(conn.peer);
+            return;
+          }
+          pendingRequests.set(conn.peer, { name: data.name || conn.peer, conn });
+          ipcRenderer.send('show-entry-request', { peerId: conn.peer, name: data.name || conn.peer });
+        });
+
+        conn.on('close', () => {
+          dataConnections.delete(conn.peer);
+          acceptedGuests.delete(conn.peer);
+          pendingRequests.delete(conn.peer);
+          const call = activeCalls.get(conn.peer);
+          if (call) { try { call.close(); } catch (e) {} }
+          activeCalls.delete(conn.peer);
+          removeGuest(conn.peer);
+        });
+      });
+
+      peer.on('call', (call) => {
+        if (viewerCall && viewerCall !== call) { try { viewerCall.close(); } catch (e) {} }
+        viewerCall = call;
+        call.answer();
+        call.on('stream', (remoteStream) => {
+          tuneReceivers(call);
+          if (streamVideo.srcObject === remoteStream) return;
+          AudioFX.playStart();
+          viewerState = 'watching';
+          videoViewport.style.display = 'flex';
+          streamVideo.muted = false;
+          streamVideo.srcObject = remoteStream;
+          streamVideo.play().catch(() => {});
+          refreshStatus();
+          if (isPopoutOpen) startPopoutStream();
+        });
+        call.on('close', () => {
+          if (viewerCall === call) {
+            viewerCall = null;
+            if (viewerState === 'watching') AudioFX.playStop();
+            clearViewer();
+          }
+        });
+      });
+    }
+
+    function clearViewer() {
+      if (!localStream) {
+        streamVideo.srcObject = null;
+        videoViewport.style.display = 'none';
+        if (isPopoutOpen) ipcRenderer.send('close-popout');
+      }
+      viewerState = viewerConn && viewerConn.open ? 'waiting' : 'none';
+      refreshStatus();
+    }
+
+    function leaveViewing(msg) {
+      if (viewerCall) { try { viewerCall.close(); } catch (e) {} viewerCall = null; }
+      if (viewerConn) { try { viewerConn.close(); } catch (e) {} viewerConn = null; }
+      viewerState = 'none';
+      clearViewer();
+      if (msg) alert(msg);
+    }
+
+    initPeer();
+
+    // ========================================================
+    // HOST: ROOM (FIXED / PERSISTENT)
+    // ========================================================
+    function callGuest(peerId) {
+      if (!localStream || !peer) return;
+      const call = peer.call(peerId, localStream, callOptions());
+      if (!call) return;
+      activeCalls.set(peerId, call);
+      call.on('close', () => { if (activeCalls.get(peerId) === call) activeCalls.delete(peerId); });
+      tuneCall(call);
+    }
+
+    ipcRenderer.on('entry-response-forward', (e, { accepted, peerId }) => {
+      const pending = pendingRequests.get(peerId);
+      if (!pending) return;
+      if (accepted) {
+        acceptedGuests.add(peerId);
+        pending.conn.send({ type: 'accepted', live: !!localStream });
+        addGuestToUI(peerId, pending.name);
+        if (localStream) callGuest(peerId);
+        refreshStatus();
+      } else {
+        pending.conn.send({ type: 'rejected', reason: 'Pedido recusado pelo anfitrião' });
+      }
+      pendingRequests.delete(peerId);
+    });
+
+    function openRoom() {
+      activeRoom = true;
+      localStorage.setItem('golite_room', '1');
+      btnCreateRoom.style.display = 'none';
+      btnCloseRoom.style.display = 'inline-flex';
+      guestsContainer.style.display = 'flex';
+      refreshStatus();
+    }
+
+    function closeRoom() {
+      acceptedGuests.forEach(id => {
+        const c = dataConnections.get(id);
+        if (c) { try { c.send({ type: 'room-closed' }); } catch (e) {} }
+      });
+      if (localStream) stopSharing(true);
+      dataConnections.forEach(c => { try { c.close(); } catch (e) {} });
+      dataConnections.clear();
+      acceptedGuests.clear();
+      pendingRequests.clear();
+      guestList.innerHTML = '';
+      activeRoom = false;
+      localStorage.setItem('golite_room', '0');
+      btnCreateRoom.style.display = 'inline-flex';
+      btnCloseRoom.style.display = 'none';
+      guestsContainer.style.display = 'none';
+      refreshStatus();
+    }
+
+    btnCreateRoom.addEventListener('click', openRoom);
+    btnCloseRoom.addEventListener('click', () => { AudioFX.playStop(); closeRoom(); });
+
+    // The room is fixed: it reopens automatically on every launch unless explicitly closed
+    if (localStorage.getItem('golite_room') !== '0') openRoom();
+
+    function addGuestToUI(peerId, name) {
+      if (document.getElementById('guest-' + peerId)) return;
+      const item = document.createElement('div');
+      item.className = 'guest-item';
+      item.id = 'guest-' + peerId;
+      item.innerHTML = `
+        <span style="font-weight:600;">${name}</span>
+        <button class="btn-kick" onclick="kickGuest('${peerId}')">Expulsar</button>
+      `;
+      guestList.appendChild(item);
+    }
+
+    window.kickGuest = function (peerId) {
+      const conn = dataConnections.get(peerId);
+      if (conn) {
+        try { conn.send({ type: 'kicked' }); } catch (e) {}
+        setTimeout(() => { try { conn.close(); } catch (e) {} }, 200);
+      }
+      const call = activeCalls.get(peerId);
+      if (call) { try { call.close(); } catch (e) {} }
+      activeCalls.delete(peerId);
+      acceptedGuests.delete(peerId);
+      removeGuest(peerId);
+    };
+
+    function removeGuest(peerId) {
+      const el = document.getElementById('guest-' + peerId);
+      if (el) el.remove();
+      refreshStatus();
+    }
+
+    // ========================================================
+    // GUEST: JOIN SOMEONE ELSE'S ROOM
+    // ========================================================
+    btnRequestJoin.addEventListener('click', () => {
+      const targetCode = targetPeerInput.value.trim().toUpperCase();
+      if (!targetCode) return alert('Digite o código do seu amigo!');
+      if (targetCode === myId) return alert('Esse é o seu próprio código.');
+
+      if (viewerConn) { try { viewerConn.close(); } catch (e) {} viewerConn = null; }
+      viewerState = 'asking';
+      refreshStatus();
+
+      const conn = peer.connect(targetCode, { reliable: true });
+      viewerConn = conn;
+
+      conn.on('open', () => conn.send({ type: 'request-entry', name: myId }));
+
+      conn.on('data', (data) => {
+        if (!data) return;
+        if (data.type === 'accepted') {
+          viewerState = 'waiting';
+          refreshStatus();
+        } else if (data.type === 'rejected') {
+          viewerConn = null;
+          viewerState = 'none';
+          refreshStatus();
+          alert('Aviso: ' + (data.reason || 'Pedido não aceito.'));
+        } else if (data.type === 'kicked') {
+          AudioFX.playStop();
+          leaveViewing('Você foi removido da sala pelo anfitrião.');
+        } else if (data.type === 'room-closed') {
+          AudioFX.playStop();
+          leaveViewing('A sala foi encerrada pelo anfitrião.');
+        } else if (data.type === 'stream-ended') {
+          if (viewerCall) { try { viewerCall.close(); } catch (e) {} viewerCall = null; }
+          clearViewer();
+        }
+      });
+
+      conn.on('close', () => {
+        if (viewerConn === conn) {
+          viewerConn = null;
+          if (viewerState === 'watching') AudioFX.playStop();
+          viewerState = 'none';
+          if (viewerCall) { try { viewerCall.close(); } catch (e) {} viewerCall = null; }
+          clearViewer();
+        }
+      });
+    });
+
+    // ========================================================
+    // CAPTURE / SHARE
+    // ========================================================
+    btnOpenPicker.addEventListener('click', () => ipcRenderer.send('open-picker'));
+    btnStopShare.addEventListener('click', () => stopSharing());
+
+    ipcRenderer.on('source-selected', async (e, source) => {
+      currentSource = source;
+      selectedSourceLabel.textContent = currentSource.name || 'Fonte selecionada';
+      await startCapture();
+    });
+
+    async function startCapture() {
+      if (!currentSource) return;
+      if (localStream) stopSharing(true);
+      const { width, height, fps } = captureDims();
+      let stream = null;
+
+      // Window sources get NO audio: Chromium cannot isolate per-app audio, it would leak the whole system mix.
+      // Full-screen sources keep system audio.
+      if (currentSource.isScreen) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: { mandatory: { chromeMediaSource: 'desktop' } },
+            video: videoConstraints()
+          });
+        } catch (err) { stream = null; }
+      }
+      if (!stream) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: videoConstraints() });
+        } catch (err) {
+          alert('Não foi possível capturar essa fonte.');
+          currentSource = null;
+          updateShareUI();
+          return;
+        }
+      }
+
+      localStream = stream;
+      const vt = localStream.getVideoTracks()[0];
+      if (vt) {
+        vt.contentHint = 'motion';
+        vt.onended = () => { if (localStream) stopSharing(); };
+      }
+
+      AudioFX.playStart();
+      videoViewport.style.display = 'flex';
+      streamVideo.srcObject = localStream;
+      streamVideo.muted = true;
+      streamVideo.play().catch(() => {});
+      updateShareUI();
+      selectedSourceLabel.textContent = currentSource.name || 'Fonte selecionada';
+
+      activeCalls.forEach(c => { try { c.close(); } catch (e) {} });
+      activeCalls.clear();
+      acceptedGuests.forEach(id => callGuest(id));
+      refreshStatus();
+      if (isPopoutOpen) startPopoutStream();
+    }
+
+    function stopSharing(silent) {
+      if (!localStream) return;
+      const s = localStream;
+      localStream = null;
+      s.getTracks().forEach(t => { t.onended = null; t.stop(); });
+
+      acceptedGuests.forEach(id => {
+        const c = dataConnections.get(id);
+        if (c) { try { c.send({ type: 'stream-ended' }); } catch (e) {} }
+      });
+      activeCalls.forEach(c => { try { c.close(); } catch (e) {} });
+      activeCalls.clear();
+
+      closePopoutPc();
+      if (isPopoutOpen) ipcRenderer.send('close-popout');
+      if (viewerState !== 'watching') {
+        streamVideo.srcObject = null;
+        videoViewport.style.display = 'none';
+      }
+      currentSource = null;
+      if (!silent) AudioFX.playStop();
+      updateShareUI();
+      refreshStatus();
+    }
+
+    // ========================================================
+    // POPOUT / DETACHED VIEWER WINDOW (WEBRTC LOOPBACK)
+    // ========================================================
+    let popoutPc = null;
+    let isPopoutOpen = false;
+    let pendingPopoutCandidates = [];
+
+    function getActiveStream() {
+      return localStream || streamVideo.srcObject;
+    }
+
+    function closePopoutPc() {
+      if (popoutPc) {
+        try { popoutPc.close(); } catch (e) {}
+        popoutPc = null;
+      }
+      pendingPopoutCandidates = [];
+    }
+
+    async function startPopoutStream() {
+      const stream = getActiveStream();
+      if (!stream) return;
+      closePopoutPc();
+
+      popoutPc = new RTCPeerConnection({ iceServers: [] });
+      const mine = stream === localStream;
+      // The streamer never hears its own audio in the detached window
+      stream.getTracks().filter(t => !mine || t.kind === 'video').forEach(t => popoutPc.addTrack(t, stream));
+      preferH264(popoutPc);
+
+      popoutPc.onicecandidate = (e) => {
+        if (e.candidate) ipcRenderer.send('popout-signal', { candidate: e.candidate.toJSON() });
+      };
+
+      try {
+        const offer = await popoutPc.createOffer();
+        const sdp = mungeSdp(offer.sdp, 60000, 20000);
+        await popoutPc.setLocalDescription({ type: 'offer', sdp });
+        ipcRenderer.send('popout-signal', { sdp: { type: 'offer', sdp } });
+        tuneSenderPc(popoutPc, 60000000);
+        setTimeout(() => tuneSenderPc(popoutPc, 60000000), 1500);
+      } catch (err) {
+        console.error('Failed to create offer for popout:', err);
+      }
+    }
+
+    btnPopout.addEventListener('click', () => {
+      if (!getActiveStream()) {
+        alert('Nenhuma transmissão ativa para desacoplar no momento.');
+        return;
+      }
+      ipcRenderer.send('open-popout');
+    });
+
+    btnReattach.addEventListener('click', () => ipcRenderer.send('close-popout'));
+
+    ipcRenderer.on('popout-ready', async () => {
+      isPopoutOpen = true;
+      // Keep the hidden <video> alive so Chromium keeps decoding frames
+      streamVideo.style.position = 'absolute';
+      streamVideo.style.width = '1px';
+      streamVideo.style.height = '1px';
+      streamVideo.style.opacity = '0.001';
+      streamVideo.style.pointerEvents = 'none';
+      popoutPlaceholder.style.display = 'flex';
+      await startPopoutStream();
+    });
+
+    ipcRenderer.on('popout-signal', async (e, msg) => {
+      if (!popoutPc) return;
+      if (msg.sdp) {
+        try {
+          await popoutPc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+          while (pendingPopoutCandidates.length > 0) {
+            try { await popoutPc.addIceCandidate(pendingPopoutCandidates.shift()); } catch (err) {}
+          }
+        } catch (err) {
+          console.error('Popout setRemoteDescription error:', err);
+        }
+      } else if (msg.candidate) {
+        if (popoutPc.remoteDescription && popoutPc.remoteDescription.type) {
+          try { await popoutPc.addIceCandidate(new RTCIceCandidate(msg.candidate)); } catch (err) {}
+        } else {
+          pendingPopoutCandidates.push(new RTCIceCandidate(msg.candidate));
+        }
+      }
+    });
+
+    ipcRenderer.on('popout-closed', () => {
+      isPopoutOpen = false;
+      popoutPlaceholder.style.display = 'none';
+      streamVideo.style.position = 'static';
+      streamVideo.style.width = '100%';
+      streamVideo.style.height = '100%';
+      streamVideo.style.opacity = '1';
+      streamVideo.style.pointerEvents = 'auto';
+      closePopoutPc();
+    });
+
+    // PiP
+    btnPip.addEventListener('click', async () => {
+      try {
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture();
+        } else if (streamVideo.requestPictureInPicture) {
+          await streamVideo.requestPictureInPicture();
+        }
+      } catch (e) {}
+    });
+
+    // ========================================================
+    // FULLSCREEN (controls vanish when the mouse is idle or leaves)
+    // ========================================================
+    let isFullscreenMode = false;
+    let mouseTimer = null;
+
+    function hideFsControls() {
+      clearTimeout(mouseTimer);
+      document.body.classList.remove('mouse-active');
+    }
+
+    window.addEventListener('mousemove', () => {
+      document.body.classList.add('mouse-active');
+      clearTimeout(mouseTimer);
+      mouseTimer = setTimeout(hideFsControls, 1800);
+    });
+    document.documentElement.addEventListener('mouseleave', hideFsControls);
+    window.addEventListener('blur', hideFsControls);
+
+    function toggleFullscreen(forceState) {
+      ipcRenderer.send('toggle-fullscreen', forceState);
+    }
+
+    btnFullscreen.addEventListener('click', () => toggleFullscreen());
+    streamVideo.addEventListener('dblclick', () => toggleFullscreen());
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isFullscreenMode) toggleFullscreen(false);
+    });
+
+    ipcRenderer.on('fullscreen-changed', (e, isFull) => {
+      isFullscreenMode = isFull;
+      if (isFull) {
+        document.body.classList.add('fullscreen-mode');
+        btnFullscreen.innerHTML = '✕ SAIR DA TELA CHEIA';
+      } else {
+        document.body.classList.remove('fullscreen-mode');
+        btnFullscreen.innerHTML = '⛶ TELA CHEIA';
+      }
+    });
+
+    // ========================================================
+    // UPDATER (GitHub Releases)
+    // ========================================================
+    const btnUpdate = document.getElementById('btnUpdate');
+    const versionLabel = document.querySelector('.titlebar-brand .version');
+    let updateReady = false;
+    let updateBusy = false;
+
+    ipcRenderer.invoke('get-version').then(v => { if (versionLabel) versionLabel.textContent = 'v' + v; });
+
+    ipcRenderer.on('update-progress', (e, pct) => {
+      btnUpdate.textContent = `⟳ Baixando ${pct}%`;
+    });
+
+    async function checkForUpdate(silent) {
+      if (updateBusy) return;
+      updateBusy = true;
+      btnUpdate.textContent = '⟳ Verificando...';
+      const r = await ipcRenderer.invoke('update-check');
+      updateBusy = false;
+      if (!r.ok) {
+        btnUpdate.textContent = '⟳ Atualizar';
+        if (!silent) showToastBadge(r.error || 'Falha ao verificar');
+        return;
+      }
+      if (r.hasUpdate) {
+        updateReady = true;
+        btnUpdate.textContent = `⬇ Instalar ${r.latest}`;
+        btnUpdate.style.color = '#ffffff';
+        btnUpdate.style.borderColor = '#ffffff';
+        showToastBadge(`Nova versão ${r.latest} disponível`);
+      } else {
+        btnUpdate.textContent = '⟳ Atualizar';
+        if (!silent) showToastBadge('Você já está na versão mais recente');
+      }
+    }
+
+    async function installUpdate() {
+      if (updateBusy) return;
+      updateBusy = true;
+      if (localStream && !confirm('Há uma transmissão ativa. Atualizar agora vai encerrá-la. Continuar?')) {
+        updateBusy = false;
+        return;
+      }
+      btnUpdate.textContent = '⟳ Baixando 0%';
+      const r = await ipcRenderer.invoke('update-apply');
+      if (!r.ok) {
+        updateBusy = false;
+        btnUpdate.textContent = '⬇ Tentar de novo';
+        showToastBadge(r.error || 'Falha ao atualizar');
+        return;
+      }
+      btnUpdate.textContent = '⟳ Reiniciando...';
+    }
+
+    btnUpdate.addEventListener('click', () => (updateReady ? installUpdate() : checkForUpdate(false)));
+    setTimeout(() => checkForUpdate(true), 4000);
+
+    updateShareUI();
+    refreshStatus();
+  </script>
+</body>
+</html>

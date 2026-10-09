@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      user-select: none;
+      border-radius: 0 !important;
+    }
+    body {
+      background: transparent;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .toast-box {
+      background: #14151a;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.04);
+      animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-40px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .toast-icon {
+      width: 28px;
+      height: 28px;
+      object-fit: cover;
+      opacity: 0.8;
+    }
+
+    .toast-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .toast-title {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #6b6e7f;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+    }
+
+    .toast-user {
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 0.4px;
+    }
+
+    .toast-user span {
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    .toast-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-toast {
+      padding: 7px 16px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .btn-accept {
+      background: #ffffff;
+      border-color: #ffffff;
+      color: #14151a;
+    }
+    .btn-accept:hover {
+      background: #d8dae2;
+      border-color: #d8dae2;
+    }
+
+    .btn-reject {
+      background: transparent;
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+    }
+    .btn-reject:hover {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: #ef4444;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <div class="toast-box">
+    <img src="icon.png" class="toast-icon" alt="GoLite">
+    <div class="toast-info">
+      <div class="toast-title">Pedido de Entrada</div>
+      <div class="toast-user"><span id="guestCode">Amigo</span> quer assistir sua live</div>
+    </div>
+    <div class="toast-buttons">
+      <button class="btn-toast btn-accept" id="btnAccept">✓ Aceitar</button>
+      <button class="btn-toast btn-reject" id="btnReject">✕ Recusar</button>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    let currentPeerId = null;
+
+    ipcRenderer.on('set-request', (e, { peerId, name }) => {
+      currentPeerId = peerId;
+      document.getElementById('guestCode').textContent = name || peerId;
+    });
+
+    document.getElementById('btnAccept').addEventListener('click', () => {
+      ipcRenderer.send('entry-response', { accepted: true, peerId: currentPeerId });
+    });
+
+    document.getElementById('btnReject').addEventListener('click', () => {
+      ipcRenderer.send('entry-response', { accepted: false, peerId: currentPeerId });
+    });
+  </script>
+</body>
+</html>

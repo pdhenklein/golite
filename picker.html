@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Selecionar Fonte</title>
+  <style>
+    :root {
+      --bg: #14151a;
+      --surface: #181920;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-border-hover: rgba(255, 255, 255, 0.28);
+      --text: #ffffff;
+      --text-muted: #717485;
+      --text-dim: #444654;
+      --accent: #ffffff;
+      --accent-contrast: #14151a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      user-select: none;
+      border-radius: 0 !important;
+    }
+
+    body {
+      background: transparent;
+      color: var(--text);
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Snappy VUPT pulse animation */
+    @keyframes vupt {
+      0% {
+        transform: scale(0.92);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .modal-box {
+      width: 580px;
+      height: 480px;
+      background: var(--bg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 32px 80px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.04);
+      display: flex;
+      flex-direction: column;
+      animation: vupt 0.14s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 12px 18px;
+      background: #101115;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .modal-tabs {
+      display: flex;
+      gap: 6px;
+    }
+
+    .modal-tab {
+      padding: 6px 14px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      background: transparent;
+    }
+
+    .modal-tab:hover {
+      color: #b5b8c7;
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .modal-tab.active {
+      background: #20222a;
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    .btn-close {
+      cursor: pointer;
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      padding: 4px 8px;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .btn-close:hover {
+      color: #fff;
+      border-color: var(--card-border);
+      background: #181920;
+    }
+
+    .modal-grid {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden !important;
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-auto-rows: 178px;
+      gap: 16px;
+      align-content: start;
+      background: var(--bg);
+      box-sizing: border-box;
+    }
+
+    .modal-grid::-webkit-scrollbar {
+      width: 5px;
+    }
+    .modal-grid::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+    .modal-grid::-webkit-scrollbar-thumb {
+      background: #232530;
+    }
+    .modal-grid::-webkit-scrollbar-thumb:hover {
+      background: #363948;
+    }
+
+    /* Fixed Aspect Ratio 16:9 Card Structure */
+    .picker-card {
+      min-width: 0;
+      width: 100%;
+      height: 178px;
+      min-height: 178px;
+      max-height: 178px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      cursor: pointer;
+      box-sizing: border-box;
+      background: transparent;
+      padding: 4px;
+      border: 1px solid transparent;
+      transition: all 0.12s ease;
+    }
+
+    .card-thumb-wrap {
+      width: 100%;
+      height: 144px;
+      min-height: 144px;
+      max-height: 144px;
+      flex-shrink: 0;
+      background: #08090c;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--card-border);
+      transition: all 0.12s ease;
+      box-sizing: border-box;
+    }
+
+    .card-thumb {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      background: transparent;
+      display: block;
+    }
+
+    /* Sutil e leve hover */
+    .picker-card:hover .card-thumb-wrap {
+      border-color: var(--card-border-hover);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+
+    .picker-card:hover .card-icon {
+      opacity: 0.9;
+    }
+
+    .picker-card:hover .card-title {
+      color: #dcdfe8;
+    }
+
+    /* Leve e sutil destaque selecionado */
+    .picker-card.selected .card-thumb-wrap {
+      border: 1px solid #ffffff;
+      box-shadow: 0 0 0 1px #ffffff, 0 8px 24px rgba(0, 0, 0, 0.7);
+    }
+
+    .picker-card.selected .card-icon {
+      opacity: 1;
+    }
+
+    .picker-card.selected .card-title {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .card-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+      display: block;
+    }
+
+    .card-meta {
+      min-width: 0;
+      width: 100%;
+      height: 20px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+      padding: 0 2px;
+    }
+
+    .card-icon {
+      width: 15px;
+      height: 15px;
+      object-fit: contain;
+      flex-shrink: 0;
+      opacity: 0.5;
+      transition: opacity 0.15s;
+    }
+
+    .card-title {
+      min-width: 0;
+      flex: 1;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: 0.2px;
+      transition: color 0.15s;
+    }
+
+    .modal-footer {
+      padding: 12px 18px;
+      background: #101115;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .selected-preview {
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 270px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+
+    .selected-preview span {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .footer-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 16px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #8a8d9c;
+    }
+    .btn-outline:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+      background: #181920;
+    }
+
+    .btn-primary {
+      background: #ffffff;
+      border-color: #ffffff;
+      color: #14151a;
+    }
+    .btn-primary:hover {
+      background: #d8dae4;
+      border-color: #d8dae4;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="modal-box" id="modalBox">
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="modal-tabs">
+        <div class="modal-tab active" id="tabApps">Aplicativos</div>
+        <div class="modal-tab" id="tabScreens">Tela Inteira</div>
+      </div>
+      <div class="btn-close" id="btnClose">✕</div>
+    </div>
+
+    <!-- Grid -->
+    <div class="modal-grid" id="modalGrid"></div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <div class="selected-preview" id="selectedPreview">Nenhuma janela selecionada</div>
+      <div class="footer-actions">
+        <button class="btn btn-outline" id="btnCancel">Cancelar</button>
+        <button class="btn btn-primary" id="btnConfirm">Compartilhar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    const modalGrid = document.getElementById('modalGrid');
+    const tabApps = document.getElementById('tabApps');
+    const tabScreens = document.getElementById('tabScreens');
+    const btnClose = document.getElementById('btnClose');
+    const btnCancel = document.getElementById('btnCancel');
+    const btnConfirm = document.getElementById('btnConfirm');
+    const selectedPreview = document.getElementById('selectedPreview');
+
+    let sources = [];
+    let currentTab = 'apps';
+    let selectedSource = null;
+
+    function closeModal() {
+      ipcRenderer.send('close-picker');
+    }
+
+    btnClose.addEventListener('click', closeModal);
+    btnCancel.addEventListener('click', closeModal);
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+      if (e.key === 'Enter') confirmSelection();
+    });
+
+    tabApps.addEventListener('click', () => {
+      tabApps.classList.add('active');
+      tabScreens.classList.remove('active');
+      currentTab = 'apps';
+      selectedSource = null;
+      renderGrid();
+    });
+
+    tabScreens.addEventListener('click', () => {
+      tabScreens.classList.add('active');
+      tabApps.classList.remove('active');
+      currentTab = 'screens';
+      selectedSource = null;
+      renderGrid();
+    });
+
+    ipcRenderer.on('load-sources', async () => {
+      modalGrid.innerHTML = '<div style="color:var(--text-muted); font-size:0.72rem; padding:16px; text-transform:uppercase; letter-spacing:1px;">Carregando janelas...</div>';
+      sources = await ipcRenderer.invoke('get-sources');
+      renderGrid();
+    });
+
+    function renderGrid() {
+      modalGrid.innerHTML = '';
+      const filtered = sources.filter(s => currentTab === 'screens' ? s.isScreen : !s.isScreen);
+
+      if (filtered.length === 0) {
+        modalGrid.innerHTML = '<div style="color:var(--text-muted); font-size:0.72rem; padding:16px;">Nenhuma janela encontrada.</div>';
+        return;
+      }
+
+      filtered.forEach((s, idx) => {
+        const isSelected = selectedSource?.id === s.id || (!selectedSource && idx === 0);
+        if (!selectedSource && idx === 0) {
+          selectedSource = s;
+          updatePreview();
+        }
+
+        const card = document.createElement('div');
+        card.className = 'picker-card' + (isSelected ? ' selected' : '');
+
+        const iconHtml = s.appIcon ? `<img class="card-icon" src="${s.appIcon}">` : '';
+
+        card.innerHTML = `
+          <div class="card-thumb-wrap">
+            <img class="card-thumb" src="${s.thumbnail}">
+          </div>
+          <div class="card-meta">
+            ${iconHtml}
+            <div class="card-title">${s.name || 'Sem título'}</div>
+          </div>
+        `;
+
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.picker-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          selectedSource = s;
+          updatePreview();
+        });
+
+        card.addEventListener('dblclick', () => {
+          selectedSource = s;
+          confirmSelection();
+        });
+
+        modalGrid.appendChild(card);
+      });
+    }
+
+    function updatePreview() {
+      if (selectedSource) {
+        selectedPreview.innerHTML = `Fonte: <span>${selectedSource.name || 'Sem título'}</span>`;
+      }
+    }
+
+    function confirmSelection() {
+      if (!selectedSource) return;
+      ipcRenderer.send('source-chosen', selectedSource);
+    }
+
+    btnConfirm.addEventListener('click', confirmSelection);
+  </script>
+</body>
+</html>

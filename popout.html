@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>GoLite - Transmissão Desacoplada</title>
+  <style>
+    :root {
+      --bg: #14151a;
+      --card-bg: #171820;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-border-hover: rgba(255, 255, 255, 0.24);
+      --text: #ffffff;
+      --text-muted: #6b6e7f;
+      --text-dim: #444654;
+      --accent: #ffffff;
+      --accent-contrast: #14151a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      user-select: none;
+      border-radius: 0 !important;
+    }
+
+    body {
+      background: #000;
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Standard Window Drag Titlebar */
+    .titlebar {
+      height: 38px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      -webkit-app-region: drag;
+      z-index: 100;
+      flex-shrink: 0;
+    }
+
+    .titlebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .brand-icon {
+      width: 15px;
+      height: 15px;
+      object-fit: contain;
+      opacity: 0.8;
+    }
+
+    .titlebar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      -webkit-app-region: no-drag;
+    }
+
+    .btn-action {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .btn-action:hover {
+      background: #1c1d25;
+      border-color: var(--card-border-hover);
+      color: #ffffff;
+    }
+
+    .btn-action.close:hover {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    .video-container {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+      display: block;
+    }
+
+    /* Floating subtle controls in bottom-right corner */
+    .video-controls {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(17, 18, 22, 0.94);
+      border: 1px solid var(--card-border);
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      z-index: 50;
+    }
+
+    body.mouse-active .video-controls {
+      opacity: 1;
+    }
+
+    .volume-slider {
+      width: 70px;
+      accent-color: #ffffff;
+      cursor: pointer;
+    }
+
+    /* ========================================================
+       TRUE FULLSCREEN: STRICTLY ZERO TOP BAR (NENHUMA BARRA)
+       ======================================================== */
+    body.is-fullscreen .titlebar {
+      display: none !important;
+    }
+
+    body.is-fullscreen.mouse-idle {
+      cursor: none;
+    }
+
+    body.is-fullscreen.mouse-idle .video-controls {
+      opacity: 0 !important;
+      pointer-events: none;
+    }
+
+    .status-overlay {
+      position: absolute;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Custom Drag Titlebar (COMPLETELY HIDDEN IN FULLSCREEN) -->
+  <div class="titlebar">
+    <div class="titlebar-brand">
+      <img src="icon.png" class="brand-icon" alt="icon">
+      <span>G O L I T E • Transmissão</span>
+    </div>
+    <div class="titlebar-actions">
+      <button class="btn-action" id="btnDock" title="Retornar para a barra lateral">🗗 Acoplar</button>
+      <button class="btn-action" id="btnFullscreen">⛶ Tela Cheia</button>
+      <button class="btn-action" id="btnMinimize">🗕</button>
+      <button class="btn-action close" id="btnClose">✕</button>
+    </div>
+  </div>
+
+  <!-- Video Container -->
+  <div class="video-container" id="videoContainer">
+    <div class="status-overlay" id="statusOverlay">
+      Conectando à transmissão...
+    </div>
+    <video id="popoutVideo" autoplay playsinline muted></video>
+
+    <!-- Floating controls (only appears when mouse moves) -->
+    <div class="video-controls" id="videoControls">
+      <button class="btn-action" id="btnMute">🔊</button>
+      <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.05" value="1">
+      <button class="btn-action" id="btnFloatDock">🗗 Acoplar</button>
+      <button class="btn-action" id="btnFloatFullscreen">⛶ Tela Cheia</button>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    const video = document.getElementById('popoutVideo');
+    const statusOverlay = document.getElementById('statusOverlay');
+    const btnDock = document.getElementById('btnDock');
+    const btnFloatDock = document.getElementById('btnFloatDock');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    const btnFloatFullscreen = document.getElementById('btnFloatFullscreen');
+    const btnMinimize = document.getElementById('btnMinimize');
+    const btnClose = document.getElementById('btnClose');
+    const btnMute = document.getElementById('btnMute');
+    const volumeSlider = document.getElementById('volumeSlider');
+
+    let isFullscreen = false;
+    let pc = null;
+    let pendingCandidates = [];
+    let mouseTimer = null;
+
+    btnMinimize.addEventListener('click', () => ipcRenderer.send('popout-minimize'));
+    
+    function dockBack() {
+      ipcRenderer.send('close-popout');
+    }
+
+    btnDock.addEventListener('click', dockBack);
+    btnFloatDock.addEventListener('click', dockBack);
+    btnClose.addEventListener('click', dockBack);
+
+    function toggleFullscreen(forceState) {
+      ipcRenderer.send('popout-toggle-fullscreen', forceState);
+    }
+
+    btnFullscreen.addEventListener('click', () => toggleFullscreen());
+    btnFloatFullscreen.addEventListener('click', () => toggleFullscreen());
+
+    video.addEventListener('dblclick', () => toggleFullscreen());
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        toggleFullscreen(false);
+      } else if (e.key === 'F11') {
+        toggleFullscreen();
+      }
+    });
+
+    ipcRenderer.on('popout-fullscreen-changed', (e, full) => {
+      isFullscreen = full;
+      document.body.classList.toggle('is-fullscreen', full);
+      btnFullscreen.textContent = full ? '✕ Sair' : '⛶ Tela Cheia';
+      btnFloatFullscreen.textContent = full ? '✕ Sair' : '⛶ Tela Cheia';
+    });
+
+    // Auto-hide controls and cursor after 2.5s idle in fullscreen
+    function hideControls() {
+      clearTimeout(mouseTimer);
+      document.body.classList.remove('mouse-active');
+      if (isFullscreen) document.body.classList.add('mouse-idle');
+    }
+
+    window.addEventListener('mousemove', () => {
+      document.body.classList.add('mouse-active');
+      document.body.classList.remove('mouse-idle');
+      clearTimeout(mouseTimer);
+      mouseTimer = setTimeout(hideControls, 1800);
+    });
+    document.documentElement.addEventListener('mouseleave', hideControls);
+    window.addEventListener('blur', hideControls);
+
+    btnMute.addEventListener('click', () => {
+      video.muted = !video.muted;
+      btnMute.textContent = video.muted ? '🔇' : '🔊';
+    });
+
+    volumeSlider.addEventListener('input', (e) => {
+      const vol = parseFloat(e.target.value);
+      video.volume = vol;
+      if (vol === 0) {
+        video.muted = true;
+        btnMute.textContent = '🔇';
+      } else {
+        video.muted = false;
+        btnMute.textContent = '🔊';
+      }
+    });
+
+    function initWebRTC() {
+      if (pc) {
+        try { pc.close(); } catch(e){}
+        pc = null;
+      }
+      pendingCandidates = [];
+
+      // Local loopback: no external STUN needed for IPC
+      pc = new RTCPeerConnection({ iceServers: [] });
+
+      pc.ontrack = (event) => {
+        statusOverlay.style.display = 'none';
+        if (event.streams && event.streams[0]) {
+          video.srcObject = event.streams[0];
+        } else {
+          if (!video.srcObject) {
+            video.srcObject = new MediaStream();
+          }
+          video.srcObject.addTrack(event.track);
+        }
+
+        // Try playing with unmuted first, fallback to muted if blocked
+        video.play().then(() => {
+          if (parseFloat(volumeSlider.value) > 0) {
+            video.muted = false;
+            btnMute.textContent = '🔊';
+          }
+        }).catch(() => {
+          video.muted = true;
+          btnMute.textContent = '🔇';
+          video.play().catch(err => console.error('Popout video play failed:', err));
+        });
+      };
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          ipcRenderer.send('popout-signal', { candidate: event.candidate.toJSON() });
+        }
+      };
+
+      pc.oniceconnectionstatechange = () => {
+        console.log('Popout ICE State:', pc.iceConnectionState);
+        if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+          statusOverlay.style.display = 'flex';
+          statusOverlay.textContent = 'RECONECTANDO...';
+        } else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+          statusOverlay.style.display = 'none';
+        }
+      };
+
+      ipcRenderer.on('popout-signal', async (e, msg) => {
+        if (!pc) return;
+        if (msg.sdp) {
+          try {
+            await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+            // Flush queued candidates
+            while (pendingCandidates.length > 0) {
+              const cand = pendingCandidates.shift();
+              try {
+                await pc.addIceCandidate(cand);
+              } catch(candErr) {
+                console.warn('Queued candidate add failed:', candErr);
+              }
+            }
+
+            if (msg.sdp.type === 'offer') {
+              const answer = await pc.createAnswer();
+              await pc.setLocalDescription(answer);
+              ipcRenderer.send('popout-signal', { sdp: { type: answer.type, sdp: answer.sdp } });
+            }
+          } catch(err) {
+            console.error('Popout setRemoteDescription error:', err);
+          }
+        } else if (msg.candidate) {
+          if (pc && pc.remoteDescription && pc.remoteDescription.type) {
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
+            } catch(err) {
+              console.warn('Popout addIceCandidate error:', err);
+            }
+          } else {
+            pendingCandidates.push(new RTCIceCandidate(msg.candidate));
+          }
+        }
+      });
+
+      ipcRenderer.send('popout-ready');
+    }
+
+    initWebRTC();
+  </script>
+</body>
+</html>
