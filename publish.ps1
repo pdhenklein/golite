@@ -14,6 +14,7 @@ $Version = $Version.TrimStart('v')
 $tag     = "v$Version"
 $work    = Join-Path $env:TEMP "golite-release"
 
+if (Test-Path "C:\Program Files\GitHub CLI") { $env:PATH = "$env:PATH;C:\Program Files\GitHub CLI" }
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw "GitHub CLI (gh) não encontrado. Instale: winget install GitHub.cli" }
 gh auth status *> $null
 if ($LASTEXITCODE -ne 0) { throw "Você não está logado no gh. Rode: gh auth login" }

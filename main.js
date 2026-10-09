@@ -95,6 +95,10 @@ function createWindow() {
     log('mainWindow did-finish-load');
   });
 
+  mainWindow.webContents.on('console-message', (e, level, message, line, sourceId) => {
+    log(`[mainWindow L${line}] ${message}`);
+  });
+
   mainWindow.webContents.on('did-fail-load', (e, code, desc) => {
     log(`mainWindow did-fail-load: ${code} ${desc}`);
   });
@@ -280,15 +284,22 @@ ipcMain.on('toggle-fullscreen', (e, forceState) => {
 
 // Top Notification Toast IPC
 ipcMain.on('show-entry-request', (e, data) => {
-  if (notifWindow) {
+  log('[IPC] show-entry-request recebido: ' + JSON.stringify(data));
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.flashFrame(true);
+  }
+  if (notifWindow && !notifWindow.isDestroyed()) {
     notifWindow.webContents.send('set-request', data);
+    notifWindow.setAlwaysOnTop(true, 'screen-saver');
     notifWindow.show();
+    notifWindow.moveTop();
   }
 });
 
 ipcMain.on('entry-response', (e, data) => {
-  if (notifWindow) notifWindow.hide();
-  if (mainWindow) mainWindow.webContents.send('entry-response-forward', data);
+  log('[IPC] entry-response recebido: ' + JSON.stringify(data));
+  if (notifWindow && !notifWindow.isDestroyed()) notifWindow.hide();
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('entry-response-forward', data);
 });
 
 // ========================================================

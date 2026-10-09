@@ -575,6 +575,16 @@
               </div>
             </div>
 
+            <!-- Incoming Entry Request Card Inline -->
+            <div id="incomingRequestBox" style="display: none; flex-direction: column; gap: 8px; padding: 10px; background: #1c1d25; border: 1px solid #ffffff; margin-top: 8px;">
+              <div style="font-size: 0.68rem; color: #a0a3b2; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">🔔 PEDIDO DE ENTRADA</div>
+              <div style="font-size: 0.78rem; color: #ffffff;"><span id="incomingRequestName" style="font-weight: 700;">Amigo</span> quer assistir sua live!</div>
+              <div style="display: flex; gap: 8px; margin-top: 2px;">
+                <button class="btn btn-primary" id="btnAcceptInline" style="flex: 1; padding: 6px;">✓ Aceitar</button>
+                <button class="btn btn-danger-outline" id="btnRejectInline" style="flex: 1; padding: 6px;">✕ Recusar</button>
+              </div>
+            </div>
+
             <!-- Connected Friends List -->
             <div id="guestsContainer" style="display: none; flex-direction: column; gap: 6px;">
               <div style="font-size: 0.66rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Amigos na Sala:</div>
@@ -775,6 +785,10 @@
     const btnMinimize = document.getElementById('btnMinimize');
     const btnClose = document.getElementById('btnClose');
     const btnCopyId = document.getElementById('btnCopyId');
+    const incomingRequestBox = document.getElementById('incomingRequestBox');
+    const incomingRequestName = document.getElementById('incomingRequestName');
+    const btnAcceptInline = document.getElementById('btnAcceptInline');
+    const btnRejectInline = document.getElementById('btnRejectInline');
 
     function refreshStatus() {
       const n = acceptedGuests.size;
@@ -1001,50 +1015,153 @@
     }
 
     // ========================================================
+    // INLINE ENTRY REQUEST HANDLING
+    // ========================================================
+    let currentInlinePeerId = null;
+
+    function showInlineRequest(peerId, name) {
+      currentInlinePeerId = peerId;
+      if (incomingRequestName) incomingRequestName.textContent = name || peerId;
+      if (incomingRequestBox) incomingRequestBox.style.display = 'flex';
+      AudioFX.playStart();
+      showToastBadge('PEDIDO DE ENTRADA: ' + (name || peerId));
+    }
+
+    function hideInlineRequest() {
+      if (incomingRequestBox) incomingRequestBox.style.display = 'none';
+      currentInlinePeerId = null;
+    }
+
+    function handleEntryResponse(accepted, peerId) {
+      hideInlineRequest();
+      const pending = pendingRequests.get(peerId);
+      if (!pending) return;
+      if (accepted) {
+        acceptedGuests.add(peerId);
+        try { pending.conn.send({ type: 'accepted', live: !!localStream }); } catch(e){}
+        addGuestToUI(peerId, pending.name);
+        if (localStream) callGuest(peerId);
+        refreshStatus();
+        showToastBadge(`${pending.name} ENTROU NA SALA`);
+      } else {
+        try { pending.conn.send({ type: 'rejected', reason: 'Pedido recusado pelo anfitrião' }); } catch(e){}
+      }
+      pendingRequests.delete(peerId);
+    }
+
+    if (btnAcceptInline) {
+      btnAcceptInline.addEventListener('click', () => {
+        if (currentInlinePeerId) {
+          const id = currentInlinePeerId;
+          handleEntryResponse(true, id);
+          ipcRenderer.send('entry-response', { accepted: true, peerId: id });
+        }
+      });
+    }
+
+    if (btnRejectInline) {
+      btnRejectInline.addEventListener('click', () => {
+        if (currentInlinePeerId) {
+          const id = currentInlinePeerId;
+          handleEntryResponse(false, id);
+          ipcRenderer.send('entry-response', { accepted: false, peerId: id });
+        }
+      });
+    }
+
+    ipcRenderer.on('entry-response-forward', (e, { accepted, peerId }) => {
+      handleEntryResponse(accepted, peerId);
+    });
+
+    // ========================================================
     // PEERJS
     // ========================================================
+    let isPeerOnline = false;
+
     function initPeer(attempt = 0) {
+      if (peer) {
+        try { peer.destroy(); } catch (e) {}
+        peer = null;
+      }
+      isPeerOnline = false;
+
+      console.log('[PEER] Conectando ao broker com ID:', myId);
       peer = new Peer(myId, {
         debug: 1,
         config: {
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' }
-          ],
-          iceCandidatePoolSize: 4
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun.cloudflare.com:3478' },
+            {
+              urls: [
+                'turn:openrelay.metered.ca:80',
+                'turn:openrelay.metered.ca:443',
+                'turn:openrelay.metered.ca:443?transport=tcp'
+              ],
+              username: 'openrelay',
+              credential: 'openrelay'
+            }
+          ]
         }
       });
 
+      peer.on('open', (id) => {
+        console.log('[PEER] Registrado com sucesso! ID:', id);
+        isPeerOnline = true;
+        myId = id;
+        document.getElementById('myIdDisplay').textContent = id;
+        refreshStatus();
+      });
+
       peer.on('error', (err) => {
-        console.warn('PeerJS error:', err.type);
-        // The broker may still hold our fixed ID for a few seconds after a crash/restart
-        if (err.type === 'unavailable-id' && attempt < 30) {
-          statusText.textContent = 'RECONECTANDO SALA...';
-          try { peer.destroy(); } catch (e) {}
-          setTimeout(() => initPeer(attempt + 1), 3000);
+        console.warn('[PEER] Erro:', err.type, err);
+        if (err.type === 'unavailable-id') {
+          console.warn('[PEER] ID já em uso no broker. Gerando novo ID...');
+          myId = genId();
+          localStorage.setItem('golite_id', myId);
+          document.getElementById('myIdDisplay').textContent = myId;
+          setTimeout(() => initPeer(attempt + 1), 600);
+          return;
+        }
+        if (err.type === 'peer-unavailable') {
+          if (joinTimeout) clearTimeout(joinTimeout);
+          showToastBadge('AMIGO NÃO ENCONTRADO');
+          alert('Código não encontrado ou amigo offline!\n\nVerifique se o código está correto e se seu amigo está com o GoLite aberto.');
+          if (viewerConn) { try { viewerConn.close(); } catch(e){} viewerConn = null; }
+          viewerState = 'none';
+          refreshStatus();
+          return;
         }
       });
 
       peer.on('disconnected', () => {
+        console.warn('[PEER] Desconectado. Tentando reconectar...');
+        isPeerOnline = false;
         try { peer.reconnect(); } catch (e) {}
       });
 
       peer.on('connection', (conn) => {
+        console.log('[PEER] Conexão recebida de:', conn.peer);
         dataConnections.set(conn.peer, conn);
 
         conn.on('data', (data) => {
+          console.log('[PEER] Dados recebidos de', conn.peer, data);
           if (!data || data.type !== 'request-entry') return;
-          if (!activeRoom) {
-            conn.send({ type: 'rejected', reason: 'Nenhuma sala ativa no momento' });
-            return;
-          }
+
+          // Se a sala estava fechada, abre automaticamente ao receber pedido
+          if (!activeRoom) openRoom();
+
           if (acceptedGuests.has(conn.peer)) {
             conn.send({ type: 'accepted', live: !!localStream });
             if (localStream && !activeCalls.has(conn.peer)) callGuest(conn.peer);
             return;
           }
+
           pendingRequests.set(conn.peer, { name: data.name || conn.peer, conn });
+          showInlineRequest(conn.peer, data.name || conn.peer);
           ipcRenderer.send('show-entry-request', { peerId: conn.peer, name: data.name || conn.peer });
         });
 
@@ -1052,6 +1169,7 @@
           dataConnections.delete(conn.peer);
           acceptedGuests.delete(conn.peer);
           pendingRequests.delete(conn.peer);
+          if (currentInlinePeerId === conn.peer) hideInlineRequest();
           const call = activeCalls.get(conn.peer);
           if (call) { try { call.close(); } catch (e) {} }
           activeCalls.delete(conn.peer);
@@ -1117,21 +1235,6 @@
       tuneCall(call);
     }
 
-    ipcRenderer.on('entry-response-forward', (e, { accepted, peerId }) => {
-      const pending = pendingRequests.get(peerId);
-      if (!pending) return;
-      if (accepted) {
-        acceptedGuests.add(peerId);
-        pending.conn.send({ type: 'accepted', live: !!localStream });
-        addGuestToUI(peerId, pending.name);
-        if (localStream) callGuest(peerId);
-        refreshStatus();
-      } else {
-        pending.conn.send({ type: 'rejected', reason: 'Pedido recusado pelo anfitrião' });
-      }
-      pendingRequests.delete(peerId);
-    });
-
     function openRoom() {
       activeRoom = true;
       localStorage.setItem('golite_room', '1');
@@ -1142,6 +1245,7 @@
     }
 
     function closeRoom() {
+      hideInlineRequest();
       acceptedGuests.forEach(id => {
         const c = dataConnections.get(id);
         if (c) { try { c.send({ type: 'room-closed' }); } catch (e) {} }
@@ -1163,7 +1267,7 @@
     btnCreateRoom.addEventListener('click', openRoom);
     btnCloseRoom.addEventListener('click', () => { AudioFX.playStop(); closeRoom(); });
 
-    // The room is fixed: it reopens automatically on every launch unless explicitly closed
+    // Sala sempre ativa por padrão
     if (localStorage.getItem('golite_room') !== '0') openRoom();
 
     function addGuestToUI(peerId, name) {
@@ -1200,25 +1304,58 @@
     // ========================================================
     // GUEST: JOIN SOMEONE ELSE'S ROOM
     // ========================================================
+    let joinTimeout = null;
+
     btnRequestJoin.addEventListener('click', () => {
-      const targetCode = targetPeerInput.value.trim().toUpperCase();
-      if (!targetCode) return alert('Digite o código do seu amigo!');
+      let raw = targetPeerInput.value.trim().toUpperCase().replace(/\s+/g, '');
+      if (!raw) return alert('Digite o código do seu amigo!');
+      if (!raw.startsWith('GL-')) raw = 'GL-' + raw;
+      const targetCode = raw;
+
       if (targetCode === myId) return alert('Esse é o seu próprio código.');
 
+      if (!peer || peer.disconnected || peer.destroyed) {
+        showToastBadge('CONECTANDO AOS SERVIDORES...');
+        if (peer && peer.disconnected) { try { peer.reconnect(); } catch(e){} }
+        return;
+      }
+
       if (viewerConn) { try { viewerConn.close(); } catch (e) {} viewerConn = null; }
+      if (joinTimeout) clearTimeout(joinTimeout);
+
       viewerState = 'asking';
       refreshStatus();
+      showToastBadge('CONECTANDO AO AMIGO...');
 
-      const conn = peer.connect(targetCode, { reliable: true });
+      // Timeout de segurança: 12 segundos
+      joinTimeout = setTimeout(() => {
+        if (viewerState === 'asking') {
+          showToastBadge('TEMPO ESGOTADO');
+          alert('Não foi possível conectar ao amigo (' + targetCode + ').\n\nVerifique se o código está correto e se ele está com o GoLite aberto!');
+          if (viewerConn) { try { viewerConn.close(); } catch(e){} viewerConn = null; }
+          viewerState = 'none';
+          refreshStatus();
+        }
+      }, 12000);
+
+      const conn = peer.connect(targetCode);
       viewerConn = conn;
 
-      conn.on('open', () => conn.send({ type: 'request-entry', name: myId }));
+      conn.on('open', () => {
+        console.log('[GUEST] DataChannel aberto com', targetCode, '- enviando request-entry');
+        showToastBadge('PEDIDO ENVIADO...');
+        conn.send({ type: 'request-entry', name: myId });
+      });
 
       conn.on('data', (data) => {
+        console.log('[GUEST] Dados recebidos do anfitrião:', data);
         if (!data) return;
+        if (joinTimeout) clearTimeout(joinTimeout);
+
         if (data.type === 'accepted') {
           viewerState = 'waiting';
           refreshStatus();
+          showToastBadge('ENTRADA ACEITA!');
         } else if (data.type === 'rejected') {
           viewerConn = null;
           viewerState = 'none';
@@ -1236,7 +1373,17 @@
         }
       });
 
+      conn.on('error', (err) => {
+        console.warn('[GUEST] Erro na conexão com anfitrião:', err);
+        if (joinTimeout) clearTimeout(joinTimeout);
+        showToastBadge('ERRO NA CONEXÃO');
+        alert('Erro ao conectar com o anfitrião: ' + (err.message || err));
+        viewerState = 'none';
+        refreshStatus();
+      });
+
       conn.on('close', () => {
+        if (joinTimeout) clearTimeout(joinTimeout);
         if (viewerConn === conn) {
           viewerConn = null;
           if (viewerState === 'watching') AudioFX.playStop();
@@ -1246,6 +1393,12 @@
         }
       });
     });
+
+    if (targetPeerInput) {
+      targetPeerInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') btnRequestJoin.click();
+      });
+    }
 
     // ========================================================
     // CAPTURE / SHARE
