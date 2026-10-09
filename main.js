@@ -440,6 +440,43 @@ ipcMain.on('kill-process', () => {
   process.exit(0);
 });
 
+// Windows Desktop & Start Menu Shortcuts Creator
+ipcMain.handle('create-shortcuts', async () => {
+  try {
+    const exe = process.execPath;
+    const exeDir = path.dirname(exe);
+    const icon = path.join(__dirname, 'icon.ico');
+    const ps = `
+$ws = New-Object -ComObject WScript.Shell
+$desktop = [Environment]::GetFolderPath('Desktop')
+$s1 = $ws.CreateShortcut((Join-Path $desktop 'GoLite.lnk'))
+$s1.TargetPath = ${JSON.stringify(exe)}
+$s1.WorkingDirectory = ${JSON.stringify(exeDir)}
+if (Test-Path ${JSON.stringify(icon)}) { $s1.IconLocation = ${JSON.stringify(icon)} }
+$s1.Save()
+
+$programs = [Environment]::GetFolderPath('Programs')
+$s2 = $ws.CreateShortcut((Join-Path $programs 'GoLite.lnk'))
+$s2.TargetPath = ${JSON.stringify(exe)}
+$s2.WorkingDirectory = ${JSON.stringify(exeDir)}
+if (Test-Path ${JSON.stringify(icon)}) { $s2.IconLocation = ${JSON.stringify(icon)} }
+$s2.Save()
+`;
+    const b64 = Buffer.from(ps, 'utf16le').toString('base64');
+    await new Promise((resolve, reject) => {
+      exec(`powershell.exe -NoProfile -EncodedCommand ${b64}`, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    log('create-shortcuts: shortcuts created on Desktop and Start Menu');
+    return { ok: true };
+  } catch (err) {
+    log('create-shortcuts error: ' + (err && err.message));
+    return { ok: false, error: err.message };
+  }
+});
+
 // ========================================================
 // AUTO-UPDATER (GitHub Releases -> app.zip -> swap files -> relaunch)
 // ========================================================

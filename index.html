@@ -517,6 +517,126 @@
     body.fullscreen-mode:not(.mouse-active) .video-controls {
       pointer-events: none;
     }
+
+    /* Real-Time Diagnostic Stats Overlay (Parsec style) */
+    .stats-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 50;
+      background: rgba(14, 15, 19, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 4px 10px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+      pointer-events: none;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+      user-select: none;
+    }
+    body.fullscreen-mode .stats-overlay {
+      position: fixed !important;
+      top: 16px !important;
+      left: 16px !important;
+      z-index: 1000001 !important;
+    }
+    .stats-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .stats-item.fps { color: #4ade80; }
+    .stats-item.rtt { color: #38bdf8; }
+    .stats-item.mbps { color: #facc15; }
+    .stats-item.codec { color: #cbd5e1; }
+    .stats-sep {
+      color: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Recent Friends List */
+    .recent-friends-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 4px;
+      max-height: 140px;
+      overflow-y: auto;
+    }
+    .recent-friend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      background: #14151a;
+      border: 1px solid var(--card-border);
+      transition: all 0.15s ease;
+    }
+    .recent-friend-item:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      background: #171822;
+    }
+    .recent-friend-info {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+      cursor: pointer;
+    }
+    .recent-friend-name {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .recent-friend-code {
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      font-family: monospace;
+      letter-spacing: 0.5px;
+    }
+    .recent-friend-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .btn-recent-connect {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: #ffffff;
+      padding: 3px 8px;
+      font-size: 0.64rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.15s;
+    }
+    .btn-recent-connect:hover {
+      background: #ffffff;
+      color: #101114;
+      border-color: #ffffff;
+    }
+    .btn-recent-del {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 3px 5px;
+      font-size: 0.68rem;
+      transition: color 0.15s;
+    }
+    .btn-recent-del:hover {
+      color: #ef4444;
+    }
   </style>
 </head>
 <body>
@@ -561,7 +681,13 @@
               <button class="btn-copy" id="btnCopyId">Copiar</button>
             </div>
 
-            <div style="display: flex; gap: 8px;">
+            <!-- Apelido / Nickname -->
+            <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
+              <div style="font-size: 0.64rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;">Seu Apelido:</div>
+              <input type="text" id="myNicknameInput" placeholder="Seu nome (ex: Pedro)" style="background: #14151a; border: 1px solid var(--card-border); color: #fff; padding: 6px 8px; font-size: 0.74rem; outline: none; border-radius: 0 !important;">
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 6px;">
               <button class="btn btn-coral" id="btnCreateRoom" style="flex: 1;">+ Criar Sala</button>
               <button class="btn btn-outline" id="btnCloseRoom" style="display: none;">Encerrar Sala</button>
             </div>
@@ -573,7 +699,18 @@
                 <input type="text" id="targetPeerInput" placeholder="Código (ex: GL-7K3M9Q)">
                 <button class="btn btn-outline" id="btnRequestJoin">Pedir Entrada</button>
               </div>
+
+              <!-- Recent Friends Container -->
+              <div id="recentFriendsContainer" style="display: none; flex-direction: column; gap: 4px; margin-top: 6px;">
+                <div style="font-size: 0.64rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Amigos Recentes:</div>
+                <div class="recent-friends-list" id="recentFriendsList"></div>
+              </div>
             </div>
+
+            <!-- Criar Atalho na Área de Trabalho -->
+            <button class="btn btn-outline" id="btnCreateShortcut" style="width: 100%; margin-top: 8px; font-size: 0.68rem; padding: 6px;" title="Cria atalhos na Área de Trabalho e no Menu Iniciar">
+              📌 Criar Atalho na Área de Trabalho
+            </button>
 
             <!-- Incoming Entry Request Card Inline -->
             <div id="incomingRequestBox" style="display: none; flex-direction: column; gap: 8px; padding: 10px; background: #1c1d25; border: 1px solid #ffffff; margin-top: 8px;">
@@ -643,6 +780,17 @@
           <div class="video-viewport" id="videoViewport">
             <video id="streamVideo" autoplay playsinline></video>
 
+            <!-- Real-Time Diagnostic Stats Overlay (Parsec style) -->
+            <div id="statsOverlay" class="stats-overlay" style="display: none;">
+              <span class="stats-item fps" id="statsFps">-- FPS</span>
+              <span class="stats-sep">•</span>
+              <span class="stats-item rtt" id="statsRtt">-- ms</span>
+              <span class="stats-sep">•</span>
+              <span class="stats-item mbps" id="statsBitrate">-- Mbps</span>
+              <span class="stats-sep">•</span>
+              <span class="stats-item codec" id="statsCodec">H.264</span>
+            </div>
+
             <!-- Popout Window Placeholder -->
             <div id="popoutPlaceholder" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; color: #ffffff; text-align: center; padding: 20px;">
               <div style="font-size: 1.4rem;">🗖</div>
@@ -651,6 +799,7 @@
             </div>
 
             <div class="video-controls" id="videoControls">
+              <button class="btn btn-outline" id="btnToggleStats" style="padding: 4px 8px; font-size: 0.66rem;" title="Diagnóstico em tempo real (Atalho: F3)">⚡ Stats</button>
               <button class="btn btn-outline" id="btnPopout" style="padding: 4px 8px; font-size: 0.66rem;" title="Desacoplar janela para outro monitor">🗖 Desacoplar</button>
               <button class="btn btn-outline" id="btnPip" style="padding: 4px 8px; font-size: 0.66rem;">🗗 PiP</button>
               <button class="btn btn-outline" id="btnFullscreen" style="padding: 4px 8px; font-size: 0.66rem;">⛶ Tela Cheia</button>
@@ -789,6 +938,16 @@
     const incomingRequestName = document.getElementById('incomingRequestName');
     const btnAcceptInline = document.getElementById('btnAcceptInline');
     const btnRejectInline = document.getElementById('btnRejectInline');
+    const myNicknameInput = document.getElementById('myNicknameInput');
+    const recentFriendsContainer = document.getElementById('recentFriendsContainer');
+    const recentFriendsList = document.getElementById('recentFriendsList');
+    const btnCreateShortcut = document.getElementById('btnCreateShortcut');
+    const statsOverlay = document.getElementById('statsOverlay');
+    const statsFps = document.getElementById('statsFps');
+    const statsRtt = document.getElementById('statsRtt');
+    const statsBitrate = document.getElementById('statsBitrate');
+    const statsCodec = document.getElementById('statsCodec');
+    const btnToggleStats = document.getElementById('btnToggleStats');
 
     function refreshStatus() {
       const n = acceptedGuests.size;
@@ -823,6 +982,226 @@
       if (localStream) localStream.getTracks().forEach(t => t.stop());
       ipcRenderer.send('kill-process');
     });
+
+    // ========================================================
+    // NICKNAME / APELIDO
+    // ========================================================
+    let myNickname = localStorage.getItem('golite_nickname') || '';
+    if (myNicknameInput) {
+      myNicknameInput.value = myNickname;
+      myNicknameInput.addEventListener('input', () => {
+        myNickname = myNicknameInput.value.trim();
+        localStorage.setItem('golite_nickname', myNickname);
+      });
+    }
+
+    // ========================================================
+    // AMIGOS RECENTES (SALVAR SALAS)
+    // ========================================================
+    function getRecentFriends() {
+      try {
+        return JSON.parse(localStorage.getItem('golite_recent_friends') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveRecentFriend(id, name) {
+      if (!id || id === myId) return;
+      let friends = getRecentFriends();
+      friends = friends.filter(f => f.id !== id);
+      const cleanName = (name && name !== id) ? name : id;
+      friends.unshift({ id, name: cleanName, lastSeen: Date.now() });
+      if (friends.length > 6) friends = friends.slice(0, 6);
+      localStorage.setItem('golite_recent_friends', JSON.stringify(friends));
+      renderRecentFriends();
+    }
+
+    function removeRecentFriend(id) {
+      let friends = getRecentFriends().filter(f => f.id !== id);
+      localStorage.setItem('golite_recent_friends', JSON.stringify(friends));
+      renderRecentFriends();
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str || '';
+      return d.innerHTML;
+    }
+
+    function renderRecentFriends() {
+      if (!recentFriendsList || !recentFriendsContainer) return;
+      const friends = getRecentFriends();
+      if (!friends.length) {
+        recentFriendsContainer.style.display = 'none';
+        recentFriendsList.innerHTML = '';
+        return;
+      }
+      recentFriendsContainer.style.display = 'flex';
+      recentFriendsList.innerHTML = '';
+      friends.forEach(f => {
+        const item = document.createElement('div');
+        item.className = 'recent-friend-item';
+        item.innerHTML = `
+          <div class="recent-friend-info">
+            <span class="recent-friend-name">${escapeHtml(f.name)}</span>
+            <span class="recent-friend-code">${f.id}</span>
+          </div>
+          <div class="recent-friend-actions">
+            <button class="btn-recent-connect" data-id="${f.id}">Entrar</button>
+            <button class="btn-recent-del" data-id="${f.id}" title="Remover dos recentes">✕</button>
+          </div>
+        `;
+        item.querySelector('.btn-recent-connect').addEventListener('click', () => {
+          targetPeerInput.value = f.id;
+          btnRequestJoin.click();
+        });
+        item.querySelector('.recent-friend-info').addEventListener('click', () => {
+          targetPeerInput.value = f.id;
+        });
+        item.querySelector('.btn-recent-del').addEventListener('click', (e) => {
+          e.stopPropagation();
+          removeRecentFriend(f.id);
+        });
+        recentFriendsList.appendChild(item);
+      });
+    }
+
+    renderRecentFriends();
+
+    // ========================================================
+    // CRIAR ATALHOS NA ÁREA DE TRABALHO
+    // ========================================================
+    if (btnCreateShortcut) {
+      btnCreateShortcut.addEventListener('click', async () => {
+        btnCreateShortcut.textContent = 'CRIANDO ATALHOS...';
+        const res = await ipcRenderer.invoke('create-shortcuts');
+        if (res.ok) {
+          btnCreateShortcut.textContent = '✓ ATALHOS CRIADOS!';
+          showToastBadge('ATALHO CRIADO NA ÁREA DE TRABALHO');
+          setTimeout(() => { btnCreateShortcut.textContent = '📌 Criar Atalho na Área de Trabalho'; }, 3000);
+        } else {
+          btnCreateShortcut.textContent = 'FALHA AO CRIAR';
+          alert('Erro ao criar atalhos: ' + (res.error || 'Erro desconhecido'));
+          setTimeout(() => { btnCreateShortcut.textContent = '📌 Criar Atalho na Área de Trabalho'; }, 3000);
+        }
+      });
+    }
+
+    // ========================================================
+    // OVERLAY DE DIAGNÓSTICO EM TEMPO REAL (PARSEC STYLE)
+    // ========================================================
+    let isStatsVisible = localStorage.getItem('golite_stats') === '1';
+
+    function toggleStats(force) {
+      isStatsVisible = force !== undefined ? force : !isStatsVisible;
+      localStorage.setItem('golite_stats', isStatsVisible ? '1' : '0');
+      if (statsOverlay) {
+        statsOverlay.style.display = isStatsVisible ? 'flex' : 'none';
+      }
+      if (btnToggleStats) {
+        btnToggleStats.style.color = isStatsVisible ? '#4ade80' : '';
+        btnToggleStats.style.borderColor = isStatsVisible ? '#4ade80' : '';
+      }
+      showToastBadge(isStatsVisible ? 'STATS ATIVADO (F3)' : 'STATS DESATIVADO (F3)');
+    }
+
+    if (btnToggleStats) btnToggleStats.addEventListener('click', () => toggleStats());
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'F3') {
+        e.preventDefault();
+        toggleStats();
+      }
+    });
+
+    if (isStatsVisible && statsOverlay) {
+      statsOverlay.style.display = 'flex';
+      if (btnToggleStats) {
+        btnToggleStats.style.color = '#4ade80';
+        btnToggleStats.style.borderColor = '#4ade80';
+      }
+    }
+
+    let lastStatsTime = 0;
+    let lastBytes = 0;
+    let lastFrames = 0;
+
+    setInterval(async () => {
+      if (!isStatsVisible) return;
+      let activePc = null;
+
+      if (viewerCall && viewerCall.peerConnection) {
+        activePc = viewerCall.peerConnection;
+      } else if (localStream && activeCalls.size > 0) {
+        const firstCall = activeCalls.values().next().value;
+        if (firstCall && firstCall.peerConnection) activePc = firstCall.peerConnection;
+      }
+
+      if (!activePc) {
+        if (statsFps) statsFps.textContent = '-- FPS';
+        if (statsRtt) statsRtt.textContent = '-- ms';
+        if (statsBitrate) statsBitrate.textContent = '-- Mbps';
+        return;
+      }
+
+      try {
+        const stats = await activePc.getStats();
+        const now = performance.now();
+        const dt = lastStatsTime ? (now - lastStatsTime) / 1000 : 1;
+        lastStatsTime = now;
+
+        let currentBytes = 0;
+        let currentFrames = 0;
+        let currentRttMs = null;
+        let codecStr = 'H.264';
+
+        stats.forEach(report => {
+          if (report.type === 'inbound-rtp' && report.kind === 'video') {
+            currentBytes = report.bytesReceived || 0;
+            currentFrames = report.framesDecoded || report.framesReceived || 0;
+            if (report.framesPerSecond) currentFrames = Math.round(report.framesPerSecond);
+          } else if (report.type === 'outbound-rtp' && report.kind === 'video') {
+            currentBytes = report.bytesSent || 0;
+            currentFrames = report.framesSent || 0;
+            if (report.framesPerSecond) currentFrames = Math.round(report.framesPerSecond);
+          } else if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+            if (report.currentRoundTripTime !== undefined) {
+              currentRttMs = Math.round(report.currentRoundTripTime * 1000);
+            }
+          } else if (report.type === 'codec' && report.mimeType) {
+            if (report.mimeType.toLowerCase().includes('h264')) codecStr = 'H.264';
+            else if (report.mimeType.toLowerCase().includes('vp9')) codecStr = 'VP9';
+            else if (report.mimeType.toLowerCase().includes('av1')) codecStr = 'AV1';
+          }
+        });
+
+        // Bitrate real em Mbps
+        if (lastBytes > 0 && currentBytes >= lastBytes && dt > 0) {
+          const mbps = ((currentBytes - lastBytes) * 8) / (dt * 1000000);
+          if (statsBitrate) statsBitrate.textContent = mbps.toFixed(1) + ' Mbps';
+        }
+        lastBytes = currentBytes;
+
+        // FPS real
+        if (statsFps) {
+          if (currentFrames > 0 && currentFrames < 300) {
+            statsFps.textContent = currentFrames + ' FPS';
+          } else if (lastFrames > 0 && currentFrames >= lastFrames && dt > 0) {
+            const fps = Math.round((currentFrames - lastFrames) / dt);
+            statsFps.textContent = fps + ' FPS';
+          }
+        }
+        lastFrames = currentFrames;
+
+        // Latência RTT
+        if (statsRtt && currentRttMs !== null) {
+          statsRtt.textContent = currentRttMs + ' ms';
+        }
+
+        if (statsCodec) statsCodec.textContent = codecStr;
+      } catch (err) {}
+    }, 1000);
 
     // ========================================================
     // LOW-LATENCY / HIGH-QUALITY TUNING
@@ -1021,10 +1400,11 @@
 
     function showInlineRequest(peerId, name) {
       currentInlinePeerId = peerId;
-      if (incomingRequestName) incomingRequestName.textContent = name || peerId;
+      const hasNick = name && name !== peerId;
+      if (incomingRequestName) incomingRequestName.textContent = hasNick ? `${name} (${peerId})` : peerId;
       if (incomingRequestBox) incomingRequestBox.style.display = 'flex';
       AudioFX.playStart();
-      showToastBadge('PEDIDO DE ENTRADA: ' + (name || peerId));
+      showToastBadge('PEDIDO DE ENTRADA: ' + (hasNick ? name : peerId));
     }
 
     function hideInlineRequest() {
@@ -1038,8 +1418,9 @@
       if (!pending) return;
       if (accepted) {
         acceptedGuests.add(peerId);
-        try { pending.conn.send({ type: 'accepted', live: !!localStream }); } catch(e){}
+        try { pending.conn.send({ type: 'accepted', live: !!localStream, hostName: myNickname || myId }); } catch(e){}
         addGuestToUI(peerId, pending.name);
+        saveRecentFriend(peerId, pending.name);
         if (localStream) callGuest(peerId);
         refreshStatus();
         showToastBadge(`${pending.name} ENTROU NA SALA`);
@@ -1275,8 +1656,12 @@
       const item = document.createElement('div');
       item.className = 'guest-item';
       item.id = 'guest-' + peerId;
+      const hasNick = name && name !== peerId;
       item.innerHTML = `
-        <span style="font-weight:600;">${name}</span>
+        <div style="display:flex; flex-direction:column; gap:1px; overflow:hidden;">
+          <span style="font-weight:700; color:#fff;">${escapeHtml(hasNick ? name : peerId)}</span>
+          ${hasNick ? `<span style="font-size:0.62rem; color:var(--text-dim); font-family:monospace;">${peerId}</span>` : ''}
+        </div>
         <button class="btn-kick" onclick="kickGuest('${peerId}')">Expulsar</button>
       `;
       guestList.appendChild(item);
@@ -1344,7 +1729,7 @@
       conn.on('open', () => {
         console.log('[GUEST] DataChannel aberto com', targetCode, '- enviando request-entry');
         showToastBadge('PEDIDO ENVIADO...');
-        conn.send({ type: 'request-entry', name: myId });
+        conn.send({ type: 'request-entry', name: myNickname || myId });
       });
 
       conn.on('data', (data) => {
@@ -1356,6 +1741,7 @@
           viewerState = 'waiting';
           refreshStatus();
           showToastBadge('ENTRADA ACEITA!');
+          saveRecentFriend(targetCode, data.hostName || targetCode);
         } else if (data.type === 'rejected') {
           viewerConn = null;
           viewerState = 'none';
