@@ -1,6 +1,6 @@
 {
     "name":  "golite",
-    "version":  "1.0.6",
+    "version":  "1.0.7",
     "description":  "GoLite - Compartilhamento de Tela",
     "main":  "main.js"
 }

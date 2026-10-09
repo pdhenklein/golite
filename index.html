@@ -56,7 +56,6 @@
       padding: 0;
       font-family: 'Sulphur Point', 'Caviar Dreams', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       user-select: none;
-      border-radius: 0 !important;
     }
 
     body {
@@ -226,11 +225,12 @@
       padding-left: 2px;
     }
 
-    /* Embedded monolithic obsidian card */
+    /* Embedded subtle obsidian card with smooth rounded corners */
     .card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      padding: 14px;
+      background: #161720;
+      border: 1px solid rgba(255, 255, 255, 0.035);
+      border-radius: 14px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -238,44 +238,47 @@
     }
 
     .card:hover {
-      border-color: var(--card-border-hover);
-      background: #1c1e28;
+      border-color: rgba(255, 255, 255, 0.06);
+      background: #181923;
     }
 
-    /* Hero ID Display - borderless typographic hero */
-    .id-display {
-      display: flex;
+    /* Hero ID Row with cute two-papers copy icon */
+    .id-row {
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      background: transparent;
-      border: none;
-      padding: 6px 0;
+      gap: 10px;
+      padding: 2px 0;
     }
 
     .id-value {
       font-family: 'Sulphur Point', ui-monospace, monospace;
       font-weight: 700;
-      font-size: 1.6rem;
+      font-size: 1.65rem;
       color: #ffffff;
-      letter-spacing: 4px;
+      letter-spacing: 3.5px;
       text-align: center;
     }
 
-    .btn-copy {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
+    .btn-copy-icon {
+      background: transparent;
+      border: none;
       color: var(--text-muted);
-      font-size: 0.65rem;
-      font-weight: 600;
-      padding: 2px 0;
       cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      transition: color 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px;
+      border-radius: 6px;
+      transition: color 0.15s ease, transform 0.15s ease;
+      line-height: 1;
     }
-    .btn-copy:hover {
+    .btn-copy-icon:hover {
       color: #ffffff;
+      transform: scale(1.12);
+    }
+    .btn-copy-icon:active {
+      transform: scale(0.92);
     }
 
     .btn {
@@ -283,14 +286,15 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 9px 14px;
-      font-size: 0.74rem;
+      padding: 10px 14px;
+      font-size: 0.76rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s ease;
       border: 1px solid transparent;
       letter-spacing: 0.8px;
       text-transform: uppercase;
+      border-radius: 8px;
     }
 
     /* Primary Stark White (like UNIX "Get Started" / "Done") */
@@ -300,6 +304,7 @@
       font-weight: 700;
       border-color: #ffffff;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+      border-radius: 8px;
     }
     .btn-primary:hover, .btn-coral:hover {
       background: #e4e6f0;
@@ -308,13 +313,14 @@
 
     /* Secondary Monolithic Button */
     .btn-secondary, .btn-outline {
-      background: #171822;
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: #14151e;
+      border: 1px solid rgba(255, 255, 255, 0.05);
       color: #9da2b5;
+      border-radius: 8px;
     }
     .btn-secondary:hover, .btn-outline:hover {
-      border-color: rgba(255, 255, 255, 0.22);
-      background: #1e202d;
+      border-color: rgba(255, 255, 255, 0.15);
+      background: #1a1b26;
       color: #ffffff;
     }
 
@@ -328,6 +334,7 @@
       letter-spacing: 0.8px;
       font-weight: 600;
       text-transform: uppercase;
+      border-radius: 8px;
     }
     .btn-danger-outline:hover {
       background: rgba(239, 68, 68, 0.15);
@@ -374,19 +381,20 @@
     }
 
     input[type="text"] {
-      background: var(--input-bg);
-      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.04);
       padding: 9px 12px;
       color: #ffffff;
       font-size: 0.80rem;
       outline: none;
       width: 100%;
       letter-spacing: 0.5px;
+      border-radius: 8px;
       transition: all 0.15s ease;
     }
     input[type="text"]:focus {
-      border-color: rgba(255, 255, 255, 0.25);
-      background: #111218;
+      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(0, 0, 0, 0.4);
     }
     input[type="text"]::placeholder {
       color: #4b4f62;
@@ -455,9 +463,10 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: #111217;
-      border: 1px solid var(--card-border);
-      padding: 7px 10px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.035);
+      border-radius: 8px;
+      padding: 8px 12px;
       font-size: 0.74rem;
     }
 
@@ -466,8 +475,9 @@
       border: 1px solid var(--danger-border);
       color: var(--danger);
       font-size: 0.64rem;
-      padding: 3px 7px;
+      padding: 3px 8px;
       cursor: pointer;
+      border-radius: 6px;
       transition: all 0.15s ease;
       text-transform: uppercase;
       letter-spacing: 0.6px;
@@ -480,7 +490,8 @@
     .video-viewport {
       height: 220px;
       background: #090a0d;
-      border: 1px solid var(--card-border);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
       position: relative;
       display: none;
       align-items: center;
@@ -504,6 +515,7 @@
       background: rgba(14, 15, 20, 0.90);
       backdrop-filter: blur(8px);
       border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
       padding: 6px 12px;
     }
 
@@ -631,6 +643,7 @@
       background: rgba(14, 15, 19, 0.88);
       backdrop-filter: blur(8px);
       border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
       padding: 4px 10px;
       display: flex;
       align-items: center;
@@ -676,14 +689,15 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 8px 10px;
-      background: #111218;
-      border: 1px solid var(--card-border);
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.035);
+      border-radius: 8px;
       transition: all 0.15s ease;
     }
     .recent-friend-item:hover {
-      border-color: rgba(255, 255, 255, 0.15);
-      background: #161720;
+      border-color: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
     }
     .recent-friend-info {
       display: flex;
@@ -753,7 +767,7 @@
         <div class="titlebar-brand">
           <img src="icon.png" class="brand-icon" alt="GoLite">
           <span>G O L I T E</span>
-          <span class="version" id="appVersionDisplay">v1.0.6</span>
+          <span class="version" id="appVersionDisplay">v1.0.7</span>
         </div>
         <div class="titlebar-actions">
           <span id="btnUpdate" title="Verificar atualizações" style="font-size:0.66rem; font-weight:700; letter-spacing:1px; text-transform:uppercase;">⟳ Atualizar</span>
@@ -778,12 +792,17 @@
         <div class="section">
           <div class="section-header">SALA & CONEXÃO</div>
           <div class="card">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span style="font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">SEU CÓDIGO GOLITE</span>
-              <button class="btn-copy" id="btnCopyId">Copiar</button>
-            </div>
-            <div class="id-display">
-              <span class="id-value" id="myIdDisplay">GERANDO...</span>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 2px;">
+              <span style="font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">SEU CÓDIGO GOLITE</span>
+              <div class="id-row">
+                <span class="id-value" id="myIdDisplay">GERANDO...</span>
+                <button class="btn-copy-icon" id="btnCopyId" title="Copiar código">
+                  <svg class="copy-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <!-- Apelido / Nickname -->
@@ -813,11 +832,11 @@
 
             <!-- Criar Atalho na Área de Trabalho -->
             <button class="btn-subtle" id="btnCreateShortcut" title="Cria atalhos na Área de Trabalho e no Menu Iniciar">
-              📌 Criar Atalho na Área de Trabalho
+              Criar Atalho na Área de Trabalho
             </button>
 
             <!-- Incoming Entry Request Card Inline -->
-            <div id="incomingRequestBox" style="display: none; flex-direction: column; gap: 8px; padding: 12px; background: #12131a; border: 1px solid rgba(255, 255, 255, 0.2); margin-top: 4px;">
+            <div id="incomingRequestBox" style="display: none; flex-direction: column; gap: 8px; padding: 14px; background: #161722; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; margin-top: 4px;">
               <div style="font-size: 0.65rem; color: #cbd0e0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700;">🔔 PEDIDO DE ENTRADA</div>
               <div style="font-size: 0.78rem; color: #ffffff;"><span id="incomingRequestName" style="font-weight: 700;">Amigo</span> quer assistir sua transmissão!</div>
               <div style="display: flex; gap: 8px; margin-top: 4px;">
@@ -1069,8 +1088,21 @@
 
     btnCopyId.addEventListener('click', () => {
       navigator.clipboard.writeText(myId).then(() => {
-        btnCopyId.textContent = 'COPIADO!';
-        setTimeout(() => btnCopyId.textContent = 'Copiar', 2000);
+        btnCopyId.innerHTML = `
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        `;
+        btnCopyId.title = 'Copiado!';
+        setTimeout(() => {
+          btnCopyId.innerHTML = `
+            <svg class="copy-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          `;
+          btnCopyId.title = 'Copiar código';
+        }, 1500);
       });
     });
 
@@ -1179,11 +1211,11 @@
         if (res.ok) {
           btnCreateShortcut.textContent = '✓ ATALHOS CRIADOS!';
           showToastBadge('ATALHO CRIADO NA ÁREA DE TRABALHO');
-          setTimeout(() => { btnCreateShortcut.textContent = '📌 Criar Atalho na Área de Trabalho'; }, 3000);
+          setTimeout(() => { btnCreateShortcut.textContent = 'Criar Atalho na Área de Trabalho'; }, 3000);
         } else {
           btnCreateShortcut.textContent = 'FALHA AO CRIAR';
           alert('Erro ao criar atalhos: ' + (res.error || 'Erro desconhecido'));
-          setTimeout(() => { btnCreateShortcut.textContent = '📌 Criar Atalho na Área de Trabalho'; }, 3000);
+          setTimeout(() => { btnCreateShortcut.textContent = 'Criar Atalho na Área de Trabalho'; }, 3000);
         }
       });
     }
