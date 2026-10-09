@@ -7,16 +7,19 @@
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
     :root {
-      --bg: #14151a;
-      --card-bg: #171820;
-      --card-border: rgba(255, 255, 255, 0.04);
+      --bg: #121318;
+      --sidebar-bg: #14151c;
+      --card-bg: #191b24;
+      --card-border: rgba(255, 255, 255, 0.05);
       --card-border-hover: rgba(255, 255, 255, 0.12);
-      --text: #ffffff;
-      --text-muted: #6b6e7f;
-      --text-dim: #454756;
+      --track-bg: #0f1015;
+      --input-bg: #0f1015;
+      --text-primary: #ffffff;
+      --text-secondary: #8c91a3;
+      --text-muted: #565a6b;
 
       --accent: #ffffff;
-      --accent-contrast: #14151a;
+      --accent-contrast: #121318;
 
       --danger: #ef4444;
       --danger-bg: rgba(239, 68, 68, 0.08);
@@ -36,7 +39,7 @@
 
     body {
       background-color: transparent;
-      color: var(--text);
+      color: var(--text-primary);
       height: 100vh;
       display: flex;
       overflow: hidden;
@@ -52,7 +55,7 @@
     }
 
     /* ========================================================
-       MAIN RIGHT SIDEBAR (430px) - MONOLITHIC UNIX EMBEDDED
+       MAIN RIGHT SIDEBAR (430px) - MONOLITHIC UNIX OBSIDIAN
        ======================================================== */
     .sidebar-panel {
       width: 430px;
@@ -63,19 +66,19 @@
       background: var(--bg);
       display: flex;
       flex-direction: column;
-      border-left: 1px solid rgba(255, 255, 255, 0.04);
+      border-left: 1px solid var(--card-border);
       overflow: hidden;
       box-sizing: border-box;
     }
 
     .titlebar {
-      height: 38px;
+      height: 40px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 16px;
       border-bottom: 1px solid var(--card-border);
-      background: #111216;
+      background: #0f1015;
       -webkit-app-region: drag;
       flex-shrink: 0;
     }
@@ -85,9 +88,9 @@
       align-items: center;
       gap: 10px;
       font-size: 0.74rem;
-      font-weight: 600;
+      font-weight: 700;
       color: #ffffff;
-      letter-spacing: 4px;
+      letter-spacing: 5px;
       text-transform: uppercase;
     }
 
@@ -95,7 +98,7 @@
       width: 15px;
       height: 15px;
       object-fit: contain;
-      opacity: 0.7;
+      opacity: 0.75;
       transition: opacity 0.15s;
     }
     .titlebar:hover .brand-icon {
@@ -103,10 +106,10 @@
     }
 
     .titlebar-brand span.version {
-      font-size: 0.65rem;
-      color: var(--text-dim);
+      font-size: 0.62rem;
+      color: var(--text-muted);
       font-weight: 400;
-      letter-spacing: 0.8px;
+      letter-spacing: 1px;
     }
 
     .titlebar-actions {
@@ -114,15 +117,15 @@
       align-items: center;
       gap: 10px;
       -webkit-app-region: no-drag;
-      color: var(--text-dim);
+      color: var(--text-muted);
       font-size: 0.82rem;
     }
 
     .titlebar-actions span {
       cursor: pointer;
-      padding: 2px 6px;
+      padding: 3px 6px;
       border: 1px solid transparent;
-      transition: all 0.15s;
+      transition: all 0.15s ease;
     }
     .titlebar-actions span:hover {
       color: #ffffff;
@@ -136,8 +139,8 @@
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid var(--card-border);
-      background: #121318;
-      font-size: 0.7rem;
+      background: #111218;
+      font-size: 0.68rem;
       flex-shrink: 0;
     }
 
@@ -145,17 +148,17 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      color: var(--text-dim);
+      color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 1px;
-      font-size: 0.66rem;
+      letter-spacing: 1.5px;
+      font-size: 0.64rem;
       font-weight: 600;
     }
 
     .status-dot {
       width: 6px;
       height: 6px;
-      background: var(--text-dim);
+      background: var(--text-muted);
       transition: all 0.2s;
     }
 
@@ -173,84 +176,88 @@
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
-      padding: 14px 16px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
     }
 
     .sidebar-content::-webkit-scrollbar {
-      width: 5px;
+      width: 4px;
     }
     .sidebar-content::-webkit-scrollbar-track {
-      background: var(--bg);
+      background: transparent;
     }
     .sidebar-content::-webkit-scrollbar-thumb {
-      background: #232530;
+      background: #1f222e;
     }
 
     .section {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
 
     .section-header {
-      font-size: 0.64rem;
+      font-size: 0.62rem;
       font-weight: 600;
-      color: var(--text-dim);
-      letter-spacing: 1.4px;
+      color: var(--text-muted);
+      letter-spacing: 2px;
       text-transform: uppercase;
+      padding-left: 2px;
     }
 
-    /* Embedded monolithic card */
+    /* Embedded monolithic obsidian card */
     .card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      padding: 12px;
+      padding: 14px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      transition: border-color 0.15s, background 0.15s;
+      gap: 12px;
+      transition: border-color 0.15s ease, background 0.15s ease;
     }
 
     .card:hover {
       border-color: var(--card-border-hover);
-      background: #191a24;
+      background: #1c1e28;
     }
 
+    /* Hero ID Display */
     .id-display {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      background: #111216;
+      justify-content: center;
+      background: var(--track-bg);
       border: 1px solid var(--card-border);
-      padding: 7px 10px;
-      font-size: 0.8rem;
+      padding: 12px 14px;
     }
 
     .id-value {
-      font-family: monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       font-weight: 700;
+      font-size: 1.25rem;
       color: #ffffff;
-      letter-spacing: 2px;
+      letter-spacing: 3px;
+      text-align: center;
     }
 
     .btn-copy {
-      background: transparent;
+      background: #1b1d27;
       border: 1px solid var(--card-border);
-      color: var(--text-muted);
-      font-size: 0.66rem;
-      padding: 3px 8px;
+      color: var(--text-secondary);
+      font-size: 0.64rem;
+      font-weight: 600;
+      padding: 4px 10px;
       cursor: pointer;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
-      transition: all 0.15s;
+      letter-spacing: 1px;
+      transition: all 0.15s ease;
     }
     .btn-copy:hover {
       color: #ffffff;
       border-color: rgba(255, 255, 255, 0.2);
-      background: rgba(255, 255, 255, 0.04);
+      background: #232635;
     }
 
     .btn {
@@ -258,104 +265,147 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 8px 14px;
-      font-size: 0.76rem;
+      padding: 9px 14px;
+      font-size: 0.74rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.15s ease;
       border: 1px solid transparent;
       letter-spacing: 0.8px;
       text-transform: uppercase;
     }
 
-    /* Primary Stark White */
-    .btn-coral {
+    /* Primary Stark White (like UNIX "Get Started" / "Done") */
+    .btn-primary, .btn-coral {
       background: #ffffff;
-      color: #14151a;
+      color: #121318;
       font-weight: 700;
       border-color: #ffffff;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
     }
-    .btn-coral:hover {
-      background: #d8dae4;
-      border-color: #d8dae4;
+    .btn-primary:hover, .btn-coral:hover {
+      background: #e4e6f0;
+      border-color: #e4e6f0;
     }
 
-    /* Outline Embedded */
-    .btn-outline {
-      background: #15161d;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      color: #8e91a0;
+    /* Secondary Monolithic Button */
+    .btn-secondary, .btn-outline {
+      background: #171822;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      color: #9da2b5;
     }
-    .btn-outline:hover {
-      border-color: rgba(255, 255, 255, 0.25);
-      background: #1c1d26;
+    .btn-secondary:hover, .btn-outline:hover {
+      border-color: rgba(255, 255, 255, 0.22);
+      background: #1e202d;
       color: #ffffff;
     }
 
-    /* Danger Kill Switch */
+    /* Danger Actions */
     .btn-danger-outline {
-      background: transparent;
-      border: 1px solid var(--danger-border);
-      color: var(--danger);
-      font-size: 0.76rem;
-      padding: 10px 14px;
-      width: 100%;
-      letter-spacing: 1.2px;
-      font-weight: 700;
+      background: rgba(239, 68, 68, 0.05);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #ef4444;
+      font-size: 0.74rem;
+      padding: 9px 14px;
+      letter-spacing: 0.8px;
+      font-weight: 600;
       text-transform: uppercase;
-      transition: all 0.15s;
     }
     .btn-danger-outline:hover {
-      background: var(--danger-bg);
-      border-color: var(--danger);
+      background: rgba(239, 68, 68, 0.15);
+      border-color: #ef4444;
       color: #fca5a5;
     }
 
+    .btn-subtle {
+      background: transparent;
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+      color: #7b8094;
+      font-size: 0.66rem;
+      padding: 7px 10px;
+      cursor: pointer;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      transition: all 0.15s ease;
+      width: 100%;
+    }
+    .btn-subtle:hover {
+      border-color: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .btn-kill {
+      background: transparent;
+      border: 1px solid rgba(239, 68, 68, 0.18);
+      color: #b94e4e;
+      font-size: 0.72rem;
+      padding: 9px 14px;
+      width: 100%;
+      letter-spacing: 1.2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      transition: all 0.15s ease;
+    }
+    .btn-kill:hover {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
     input[type="text"] {
-      background: #111216;
+      background: var(--input-bg);
       border: 1px solid var(--card-border);
-      padding: 8px 10px;
-      color: #fff;
-      font-size: 0.78rem;
+      padding: 9px 12px;
+      color: #ffffff;
+      font-size: 0.76rem;
       outline: none;
       width: 100%;
       letter-spacing: 0.5px;
-      transition: border-color 0.15s;
+      transition: all 0.15s ease;
     }
     input[type="text"]:focus {
-      border-color: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.25);
+      background: #111218;
+    }
+    input[type="text"]::placeholder {
+      color: #4b4f62;
     }
 
-    .pill-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-    }
-
-    /* Minimalist embedded pills */
-    .pill {
-      background: transparent;
+    /* Segmented Track (Weekly / Monthly style from Reference 1) */
+    .segmented-track {
+      display: flex;
+      background: var(--track-bg);
       border: 1px solid var(--card-border);
-      color: var(--text-dim);
-      padding: 6px 0;
+      padding: 3px;
+      gap: 3px;
+      width: 100%;
+    }
+
+    .pill {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 7px 0;
       text-align: center;
       font-size: 0.72rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.15s;
-      letter-spacing: 0.8px;
+      transition: all 0.15s ease;
+      letter-spacing: 0.6px;
       text-transform: uppercase;
     }
     .pill:hover {
-      background: rgba(255, 255, 255, 0.03);
-      color: #a0a3b2;
-      border-color: rgba(255, 255, 255, 0.12);
+      color: #cbd0e0;
+      background: rgba(255, 255, 255, 0.02);
     }
     .pill.active {
-      background: #ffffff;
-      border-color: #ffffff;
-      color: #14151a;
-      font-weight: 700;
+      background: #ffffff !important;
+      border-color: #ffffff !important;
+      color: #121318 !important;
+      font-weight: 700 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
 
     .guest-list {
@@ -368,9 +418,9 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: #111216;
+      background: #111217;
       border: 1px solid var(--card-border);
-      padding: 6px 10px;
+      padding: 7px 10px;
       font-size: 0.74rem;
     }
 
@@ -379,9 +429,9 @@
       border: 1px solid var(--danger-border);
       color: var(--danger);
       font-size: 0.64rem;
-      padding: 2px 6px;
+      padding: 3px 7px;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.15s ease;
       text-transform: uppercase;
       letter-spacing: 0.6px;
     }
@@ -392,7 +442,7 @@
 
     .video-viewport {
       height: 220px;
-      background: #000;
+      background: #090a0d;
       border: 1px solid var(--card-border);
       position: relative;
       display: none;
@@ -412,9 +462,9 @@
       bottom: 8px;
       display: flex;
       gap: 6px;
-      background: rgba(17, 18, 22, 0.94);
+      background: rgba(15, 16, 21, 0.95);
       border: 1px solid var(--card-border);
-      padding: 4px 8px;
+      padding: 5px 8px;
     }
 
     /* ========================================================
@@ -499,7 +549,7 @@
       bottom: 24px !important;
       right: 24px !important;
       z-index: 1000000 !important;
-      background: rgba(17, 18, 22, 0.95);
+      background: rgba(15, 16, 21, 0.95);
       border: 1px solid var(--card-border);
       padding: 8px 14px;
       opacity: 0;
@@ -524,9 +574,9 @@
       top: 10px;
       left: 10px;
       z-index: 50;
-      background: rgba(14, 15, 19, 0.85);
+      background: rgba(14, 15, 19, 0.88);
       backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       padding: 4px 10px;
       display: flex;
       align-items: center;
@@ -559,7 +609,7 @@
       color: rgba(255, 255, 255, 0.25);
     }
 
-    /* Recent Friends List */
+    /* Recent Friends List (UNIX luxury transaction list style) */
     .recent-friends-list {
       display: flex;
       flex-direction: column;
@@ -572,25 +622,25 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 6px 8px;
-      background: #14151a;
+      padding: 8px 10px;
+      background: #111218;
       border: 1px solid var(--card-border);
       transition: all 0.15s ease;
     }
     .recent-friend-item:hover {
-      border-color: rgba(255, 255, 255, 0.2);
-      background: #171822;
+      border-color: rgba(255, 255, 255, 0.15);
+      background: #161720;
     }
     .recent-friend-info {
       display: flex;
       flex-direction: column;
-      gap: 1px;
+      gap: 2px;
       min-width: 0;
       cursor: pointer;
     }
     .recent-friend-name {
-      font-size: 0.74rem;
-      font-weight: 700;
+      font-size: 0.76rem;
+      font-weight: 600;
       color: #ffffff;
       white-space: nowrap;
       overflow: hidden;
@@ -598,41 +648,41 @@
     }
     .recent-friend-code {
       font-size: 0.62rem;
-      color: var(--text-dim);
+      color: #63687a;
       font-family: monospace;
       letter-spacing: 0.5px;
     }
     .recent-friend-actions {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
       flex-shrink: 0;
     }
     .btn-recent-connect {
-      background: transparent;
-      border: 1px solid var(--card-border);
-      color: #ffffff;
-      padding: 3px 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #cbd0e0;
+      padding: 3px 9px;
       font-size: 0.64rem;
-      font-weight: 700;
+      font-weight: 600;
       cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      transition: all 0.15s;
+      transition: all 0.15s ease;
     }
     .btn-recent-connect:hover {
       background: #ffffff;
-      color: #101114;
+      color: #121318;
       border-color: #ffffff;
     }
     .btn-recent-del {
       background: transparent;
       border: none;
-      color: var(--text-dim);
+      color: var(--text-muted);
       cursor: pointer;
       padding: 3px 5px;
       font-size: 0.68rem;
-      transition: color 0.15s;
+      transition: color 0.15s ease;
     }
     .btn-recent-del:hover {
       color: #ef4444;
@@ -650,7 +700,7 @@
         <div class="titlebar-brand">
           <img src="icon.png" class="brand-icon" alt="GoLite">
           <span>G O L I T E</span>
-          <span class="version" id="appVersionDisplay">v1.0.1</span>
+          <span class="version" id="appVersionDisplay">v1.0.5</span>
         </div>
         <div class="titlebar-actions">
           <span id="btnUpdate" title="Verificar atualizações" style="font-size:0.66rem; font-weight:700; letter-spacing:1px; text-transform:uppercase;">⟳ Atualizar</span>
@@ -665,96 +715,97 @@
           <div class="status-dot" id="statusDot"></div>
           <span id="statusText">OCIOSO (SEM SALA)</span>
         </div>
-        <span id="qualityStatusTag" style="color: #ffffff; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.8px;">1080P • 60 FPS • 32 MBPS</span>
+        <span id="qualityStatusTag" style="color: #ffffff; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.8px;">1080P • 60 FPS • 32 MBPS</span>
       </div>
 
       <!-- Main Sidebar Content -->
       <div class="sidebar-content">
 
-        <!-- 01. SALA & CONEXÃO -->
+        <!-- SALA & CONEXÃO -->
         <div class="section">
-          <div class="section-header">01. Sala & Amigos (P2P)</div>
+          <div class="section-header">SALA & CONEXÃO</div>
           <div class="card">
-            <div style="font-size: 0.66rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;">Seu Código GoLite:</div>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">SEU CÓDIGO GOLITE</span>
+              <button class="btn-copy" id="btnCopyId">Copiar</button>
+            </div>
             <div class="id-display">
               <span class="id-value" id="myIdDisplay">GERANDO...</span>
-              <button class="btn-copy" id="btnCopyId">Copiar</button>
             </div>
 
             <!-- Apelido / Nickname -->
-            <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
-              <div style="font-size: 0.64rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;">Seu Apelido:</div>
-              <input type="text" id="myNicknameInput" placeholder="Seu nome (ex: Pedro)" style="background: #14151a; border: 1px solid var(--card-border); color: #fff; padding: 6px 8px; font-size: 0.74rem; outline: none; border-radius: 0 !important;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <input type="text" id="myNicknameInput" placeholder="Seu apelido (ex: Pedro)">
             </div>
 
-            <div style="display: flex; gap: 8px; margin-top: 6px;">
-              <button class="btn btn-coral" id="btnCreateRoom" style="flex: 1;">+ Criar Sala</button>
-              <button class="btn btn-outline" id="btnCloseRoom" style="display: none;">Encerrar Sala</button>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-primary" id="btnCreateRoom" style="flex: 1;">+ Criar Sala</button>
+              <button class="btn btn-danger-outline" id="btnCloseRoom" style="display: none; flex: 1;">Encerrar Sala</button>
             </div>
 
             <!-- Guest Input -->
-            <div id="guestConnectBox" style="display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid var(--card-border);">
-              <div style="font-size: 0.66rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;">Entrar na sala de um amigo:</div>
+            <div id="guestConnectBox" style="display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--card-border);">
+              <span style="font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">ENTRAR NA SALA DE UM AMIGO</span>
               <div style="display: flex; gap: 6px;">
                 <input type="text" id="targetPeerInput" placeholder="Código (ex: GL-7K3M9Q)">
-                <button class="btn btn-outline" id="btnRequestJoin">Pedir Entrada</button>
+                <button class="btn btn-secondary" id="btnRequestJoin" style="padding: 0 14px; white-space: nowrap;">Pedir Entrada</button>
               </div>
 
               <!-- Recent Friends Container -->
-              <div id="recentFriendsContainer" style="display: none; flex-direction: column; gap: 4px; margin-top: 6px;">
-                <div style="font-size: 0.64rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Amigos Recentes:</div>
+              <div id="recentFriendsContainer" style="display: none; flex-direction: column; gap: 6px; margin-top: 4px;">
+                <span style="font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">AMIGOS RECENTES</span>
                 <div class="recent-friends-list" id="recentFriendsList"></div>
               </div>
             </div>
 
             <!-- Criar Atalho na Área de Trabalho -->
-            <button class="btn btn-outline" id="btnCreateShortcut" style="width: 100%; margin-top: 8px; font-size: 0.68rem; padding: 6px;" title="Cria atalhos na Área de Trabalho e no Menu Iniciar">
+            <button class="btn-subtle" id="btnCreateShortcut" title="Cria atalhos na Área de Trabalho e no Menu Iniciar">
               📌 Criar Atalho na Área de Trabalho
             </button>
 
             <!-- Incoming Entry Request Card Inline -->
-            <div id="incomingRequestBox" style="display: none; flex-direction: column; gap: 8px; padding: 10px; background: #1c1d25; border: 1px solid #ffffff; margin-top: 8px;">
-              <div style="font-size: 0.68rem; color: #a0a3b2; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">🔔 PEDIDO DE ENTRADA</div>
-              <div style="font-size: 0.78rem; color: #ffffff;"><span id="incomingRequestName" style="font-weight: 700;">Amigo</span> quer assistir sua live!</div>
-              <div style="display: flex; gap: 8px; margin-top: 2px;">
-                <button class="btn btn-primary" id="btnAcceptInline" style="flex: 1; padding: 6px;">✓ Aceitar</button>
-                <button class="btn btn-danger-outline" id="btnRejectInline" style="flex: 1; padding: 6px;">✕ Recusar</button>
+            <div id="incomingRequestBox" style="display: none; flex-direction: column; gap: 8px; padding: 12px; background: #12131a; border: 1px solid rgba(255, 255, 255, 0.2); margin-top: 4px;">
+              <div style="font-size: 0.65rem; color: #cbd0e0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700;">🔔 PEDIDO DE ENTRADA</div>
+              <div style="font-size: 0.78rem; color: #ffffff;"><span id="incomingRequestName" style="font-weight: 700;">Amigo</span> quer assistir sua transmissão!</div>
+              <div style="display: flex; gap: 8px; margin-top: 4px;">
+                <button class="btn btn-primary" id="btnAcceptInline" style="flex: 1; padding: 7px;">✓ Aceitar</button>
+                <button class="btn btn-danger-outline" id="btnRejectInline" style="flex: 1; padding: 7px;">✕ Recusar</button>
               </div>
             </div>
 
             <!-- Connected Friends List -->
-            <div id="guestsContainer" style="display: none; flex-direction: column; gap: 6px;">
-              <div style="font-size: 0.66rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Amigos na Sala:</div>
+            <div id="guestsContainer" style="display: none; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--card-border);">
+              <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;">AMIGOS NA SALA</span>
               <div class="guest-list" id="guestList"></div>
             </div>
           </div>
         </div>
 
-        <!-- 02. FONTE DE CAPTURA -->
+        <!-- TRANSMISSÃO -->
         <div class="section">
-          <div class="section-header">02. Fonte</div>
+          <div class="section-header">TRANSMISSÃO</div>
           <div class="card">
-            <button class="btn btn-outline" id="btnOpenPicker" style="width: 100%;">
+            <button class="btn btn-secondary" id="btnOpenPicker" style="width: 100%;">
               Compartilhar a tela
             </button>
-            <button class="btn btn-danger-outline" id="btnStopShare" style="display: none;">
+            <button class="btn btn-danger-outline" id="btnStopShare" style="display: none; width: 100%;">
               Encerrar Transmissão
             </button>
-            <div style="font-size: 0.72rem; font-weight: 500; color: var(--text-muted);" id="selectedSourceLabel">
+            <div style="font-size: 0.70rem; font-weight: 500; color: var(--text-muted); text-align: center;" id="selectedSourceLabel">
               Nenhuma fonte selecionada
             </div>
           </div>
         </div>
 
-        <!-- 03. CONFIGURAÇÕES -->
+        <!-- QUALIDADE & FPS -->
         <div class="section">
-          <div class="section-header">03. Qualidade & FPS</div>
+          <div class="section-header">QUALIDADE & FPS</div>
           <div class="card">
             <div style="display: flex; flex-direction: column; gap: 6px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
-                <label style="font-size: 0.66rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">RESOLUÇÃO</label>
+                <label style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;">RESOLUÇÃO</label>
               </div>
-              <div class="pill-grid">
+              <div class="segmented-track">
                 <div class="pill" data-res="720">720p</div>
                 <div class="pill active" data-res="1080">1080p</div>
                 <div class="pill" data-res="1440">2K</div>
@@ -763,9 +814,9 @@
 
             <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
-                <label style="font-size: 0.66rem; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">TAXA DE QUADROS</label>
+                <label style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;">TAXA DE QUADROS</label>
               </div>
-              <div class="pill-grid">
+              <div class="segmented-track">
                 <div class="pill" data-fps="30">30 fps</div>
                 <div class="pill active" data-fps="60">60 fps</div>
                 <div class="pill" data-fps="120">120 fps</div>
@@ -774,9 +825,9 @@
           </div>
         </div>
 
-        <!-- 04. PLAYER (QUANDO CONVIDADO OU TRANSMITINDO) -->
+        <!-- VISUALIZAÇÃO -->
         <div class="section" id="sectionPlayer">
-          <div class="section-header">04. Visualização</div>
+          <div class="section-header">VISUALIZAÇÃO</div>
           <div class="video-viewport" id="videoViewport">
             <video id="streamVideo" autoplay playsinline></video>
 
@@ -795,22 +846,22 @@
             <div id="popoutPlaceholder" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; color: #ffffff; text-align: center; padding: 20px;">
               <div style="font-size: 1.4rem;">🗖</div>
               <div style="font-size: 0.72rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">Transmitindo em janela desacoplada</div>
-              <button class="btn btn-outline" id="btnReattach" style="font-size: 0.7rem; padding: 4px 10px;">🗗 Reacoplar</button>
+              <button class="btn btn-secondary" id="btnReattach" style="font-size: 0.7rem; padding: 5px 12px;">🗗 Reacoplar</button>
             </div>
 
             <div class="video-controls" id="videoControls">
-              <button class="btn btn-outline" id="btnToggleStats" style="padding: 4px 8px; font-size: 0.66rem;" title="Diagnóstico em tempo real (Atalho: F3)">⚡ Stats</button>
-              <button class="btn btn-outline" id="btnPopout" style="padding: 4px 8px; font-size: 0.66rem;" title="Desacoplar janela para outro monitor">🗖 Desacoplar</button>
-              <button class="btn btn-outline" id="btnPip" style="padding: 4px 8px; font-size: 0.66rem;">🗗 PiP</button>
-              <button class="btn btn-outline" id="btnFullscreen" style="padding: 4px 8px; font-size: 0.66rem;">⛶ Tela Cheia</button>
+              <button class="btn btn-secondary" id="btnToggleStats" style="padding: 4px 8px; font-size: 0.66rem;" title="Diagnóstico em tempo real (Atalho: F3)">⚡ Stats</button>
+              <button class="btn btn-secondary" id="btnPopout" style="padding: 4px 8px; font-size: 0.66rem;" title="Desacoplar janela para outro monitor">🗖 Desacoplar</button>
+              <button class="btn btn-secondary" id="btnPip" style="padding: 4px 8px; font-size: 0.66rem;">🗗 PiP</button>
+              <button class="btn btn-secondary" id="btnFullscreen" style="padding: 4px 8px; font-size: 0.66rem;">⛶ Tela Cheia</button>
             </div>
           </div>
         </div>
 
-        <!-- 05. KILL SWITCH -->
+        <!-- KILL SWITCH -->
         <div class="section" style="margin-top: auto; padding-top: 10px;">
-          <button class="btn btn-danger-outline" id="btnKillProcess">
-            Encerrar
+          <button class="btn-kill" id="btnKillProcess">
+            Encerrar GoLite
           </button>
         </div>
 
