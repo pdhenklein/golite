@@ -2024,62 +2024,103 @@
     });
 
     // ========================================================
-    // UPDATER (GitHub Releases)
+    // UPDATER (GitHub Releases - Discord Style)
     // ========================================================
     const btnUpdate = document.getElementById('btnUpdate');
-    const versionLabel = document.querySelector('.titlebar-brand .version');
-    let updateReady = false;
-    let updateBusy = false;
+    const versionLabel = document.getElementById('appVersionDisplay') || document.querySelector('.titlebar-brand .version');
+    let updateState = 'idle'; // idle | has-update | downloading | ready-to-restart
+    let latestVersionTag = '';
 
-    ipcRenderer.invoke('get-version').then(v => { if (versionLabel) versionLabel.textContent = 'v' + v; });
+    ipcRenderer.invoke('get-version').then(v => { if (versionLabel && v) versionLabel.textContent = 'v' + v; });
 
     ipcRenderer.on('update-progress', (e, pct) => {
-      btnUpdate.textContent = `⟳ Baixando ${pct}%`;
+      if (updateState === 'downloading') {
+        btnUpdate.textContent = `⟳ Baixando ${pct}%`;
+      }
     });
 
     async function checkForUpdate(silent) {
-      if (updateBusy) return;
-      updateBusy = true;
+      if (updateState === 'downloading' || updateState === 'ready-to-restart') return;
       btnUpdate.textContent = '⟳ Verificando...';
       const r = await ipcRenderer.invoke('update-check');
-      updateBusy = false;
       if (!r.ok) {
         btnUpdate.textContent = '⟳ Atualizar';
         if (!silent) showToastBadge(r.error || 'Falha ao verificar');
         return;
       }
       if (r.hasUpdate) {
-        updateReady = true;
-        btnUpdate.textContent = `⬇ Instalar ${r.latest}`;
+        updateState = 'has-update';
+        latestVersionTag = r.latest;
+        btnUpdate.textContent = `⬇ Baixar ${r.latest}`;
         btnUpdate.style.color = '#ffffff';
         btnUpdate.style.borderColor = '#ffffff';
-        showToastBadge(`Nova versão ${r.latest} disponível`);
+        showToastBadge(`Nova versão ${r.latest} disponível!`);
       } else {
         btnUpdate.textContent = '⟳ Atualizar';
+        btnUpdate.style.color = '';
+        btnUpdate.style.borderColor = '';
+        btnUpdate.style.background = '';
+        btnUpdate.style.boxShadow = '';
         if (!silent) showToastBadge('Você já está na versão mais recente');
       }
     }
 
-    async function installUpdate() {
-      if (updateBusy) return;
-      updateBusy = true;
-      if (localStream && !confirm('Há uma transmissão ativa. Atualizar agora vai encerrá-la. Continuar?')) {
-        updateBusy = false;
+    async function startDownload() {
+      if (updateState === 'downloading') return;
+      updateState = 'downloading';
+      btnUpdate.textContent = '⟳ Baixando 0%';
+      btnUpdate.style.borderColor = '#38bdf8';
+      btnUpdate.style.color = '#38bdf8';
+      showToastBadge('BAIXANDO ATUALIZAÇÃO EM SEGUNDO PLANO...');
+
+      const r = await ipcRenderer.invoke('update-download');
+      if (!r.ok) {
+        updateState = 'has-update';
+        btnUpdate.textContent = `⬇ Tentar Baixar`;
+        btnUpdate.style.color = '#ef4444';
+        btnUpdate.style.borderColor = '#ef4444';
+        showToastBadge(r.error || 'Falha no download');
         return;
       }
-      btnUpdate.textContent = '⟳ Baixando 0%';
-      const r = await ipcRenderer.invoke('update-apply');
-      if (!r.ok) {
-        updateBusy = false;
-        btnUpdate.textContent = '⬇ Tentar de novo';
-        showToastBadge(r.error || 'Falha ao atualizar');
+
+      // Download concluído! Botão verde igual ao Discord
+      updateState = 'ready-to-restart';
+      btnUpdate.textContent = `🟢 Reiniciar (${latestVersionTag || 'Update'})`;
+      btnUpdate.style.background = '#16a34a';
+      btnUpdate.style.color = '#ffffff';
+      btnUpdate.style.borderColor = '#22c55e';
+      btnUpdate.style.boxShadow = '0 0 12px rgba(34, 197, 94, 0.6)';
+      btnUpdate.style.padding = '3px 8px';
+      btnUpdate.style.fontWeight = '700';
+
+      AudioFX.playStart();
+      showToastBadge('✓ ATUALIZAÇÃO PRONTA! CLIQUE EM REINICIAR');
+    }
+
+    async function applyAndRestart() {
+      if (localStream && !confirm('Há uma transmissão ativa. Reiniciar agora vai encerrá-la. Continuar?')) {
         return;
       }
       btnUpdate.textContent = '⟳ Reiniciando...';
+      btnUpdate.style.background = '#15803d';
+      const r = await ipcRenderer.invoke('update-apply-restart');
+      if (!r.ok) {
+        alert('Erro ao aplicar: ' + (r.error || 'Erro desconhecido'));
+        btnUpdate.textContent = `🟢 Tentar Reiniciar`;
+      }
     }
 
-    btnUpdate.addEventListener('click', () => (updateReady ? installUpdate() : checkForUpdate(false)));
-    setTimeout(() => checkForUpdate(true), 4000);
+    btnUpdate.addEventListener('click', () => {
+      if (updateState === 'ready-to-restart') {
+        applyAndRestart();
+      } else if (updateState === 'has-update') {
+        startDownload();
+      } else if (updateState === 'idle') {
+        checkForUpdate(false);
+      }
+    });
+
+    setTimeout(() => checkForUpdate(true), 3500);
 
     updateShareUI();
     refreshStatus();

@@ -550,7 +550,9 @@ ipcMain.handle('update-check', async () => {
   }
 });
 
-ipcMain.handle('update-apply', async () => {
+let downloadedUpdate = null;
+
+ipcMain.handle('update-download', async () => {
   if (!pendingUpdate) return { ok: false, error: 'Nada para atualizar' };
   try {
     const workDir = path.join(os.tmpdir(), 'golite-update');
@@ -575,42 +577,60 @@ ipcMain.handle('update-apply', async () => {
       res.on('error', reject);
     });
 
-    const ps1 = path.join(workDir, 'apply-update.ps1');
-    const safeTarget = JSON.stringify(__dirname);
-    const safeExe = JSON.stringify(process.execPath);
-    const safeZip = JSON.stringify(zipPath);
-    const procId = process.pid;
+    // Test extraction to staged folder to verify zip integrity
+    const stagedDir = path.join(workDir, 'staged');
+    if (fs.existsSync(stagedDir)) fs.rmSync(stagedDir, { recursive: true, force: true });
+    fs.mkdirSync(stagedDir, { recursive: true });
+    const { execSync } = require('child_process');
+    execSync(`tar -xf ${JSON.stringify(zipPath)} -C ${JSON.stringify(stagedDir)}`);
+    log('[UPDATER] Arquivo zip verificado e extraído com sucesso!');
+    downloadedUpdate = { version: pendingUpdate.version, stagedDir, zipPath };
+    return { ok: true, version: pendingUpdate.version };
+  } catch (err) {
+    log('update-download error: ' + (err && err.stack));
+    return { ok: false, error: 'Falha ao baixar atualização' };
+  }
+});
 
-    fs.writeFileSync(ps1, [
-      `$log = Join-Path $env:TEMP "golite-update\\update.log"`,
-      `"[$(Get-Date)] Iniciando atualizacao..." | Out-File $log -Encoding utf8`,
-      `$target = ${safeTarget}`,
-      `$exe = ${safeExe}`,
-      `$zip = ${safeZip}`,
-      `$procId = ${procId}`,
-      `try { Wait-Process -Id $procId -Timeout 10 -ErrorAction SilentlyContinue } catch {}`,
-      `Get-Process -Name GoLite -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue`,
-      `Start-Sleep -Milliseconds 1200`,
-      `$tmp = Join-Path $env:TEMP "golite-update\\extract"`,
-      `if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }`,
-      `Expand-Archive -LiteralPath $zip -DestinationPath $tmp -Force`,
-      `robocopy $tmp $target /E /NFL /NDL /NJH /NJS /R:8 /W:1 | Out-Null`,
-      `"[$(Get-Date)] Arquivos copiados com sucesso para $target" | Out-File $log -Append -Encoding utf8`,
-      `Start-Sleep -Milliseconds 600`,
-      `Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{CommandLine = ('"' + $exe + '"')}`,
-      `"[$(Get-Date)] GoLite reiniciado com sucesso!" | Out-File $log -Append -Encoding utf8`
-    ].join('\r\n'), 'utf8');
+ipcMain.handle('update-apply-restart', async () => {
+  if (!downloadedUpdate) return { ok: false, error: 'Atualização não foi baixada' };
+  try {
+    log('[UPDATER] Aplicando atualização para ' + downloadedUpdate.version);
+    const { execSync } = require('child_process');
+    // Overwrite files directly in __dirname
+    execSync(`tar -xf ${JSON.stringify(downloadedUpdate.zipPath)} -C ${JSON.stringify(__dirname)}`);
+    log('[UPDATER] Arquivos copiados com sucesso para ' + __dirname);
 
-    spawn('powershell.exe', [
-      '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', ps1
-    ], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
-
-    log('[UPDATER] Handing off to updater script for ' + pendingUpdate.version);
-    setTimeout(() => { app.isQuitting = true; app.exit(0); }, 500);
+    // Reinicia o app instantaneamente
+    app.relaunch();
+    setTimeout(() => {
+      app.isQuitting = true;
+      app.exit(0);
+    }, 200);
     return { ok: true };
   } catch (err) {
-    log('update-apply error: ' + (err && err.stack));
-    return { ok: false, error: 'Falha ao atualizar' };
+    log('update-apply-restart error: ' + (err && err.stack));
+    return { ok: false, error: 'Falha ao aplicar atualização' };
+  }
+});
+
+// Backward compatibility
+ipcMain.handle('update-apply', async () => {
+  try {
+    const workDir = path.join(os.tmpdir(), 'golite-update');
+    fs.mkdirSync(workDir, { recursive: true });
+    const zipPath = path.join(workDir, 'app.zip');
+    const res = await httpsGet(pendingUpdate.url);
+    if (res.statusCode !== 200) { res.resume(); return { ok: false, error: 'Falha no download' }; }
+    const out = fs.createWriteStream(zipPath);
+    await new Promise((resolve, reject) => { res.pipe(out); out.on('finish', resolve); out.on('error', reject); });
+    const { execSync } = require('child_process');
+    execSync(`tar -xf ${JSON.stringify(zipPath)} -C ${JSON.stringify(__dirname)}`);
+    app.relaunch();
+    setTimeout(() => { app.isQuitting = true; app.exit(0); }, 200);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
   }
 });
 
